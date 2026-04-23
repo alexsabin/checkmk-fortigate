@@ -1,0 +1,241 @@
+#!/usr/bin/env python3
+
+import sys
+import os
+import json
+import requests
+import argparse
+from urllib3.exceptions import InsecureRequestWarning
+from typing import Dict, Any
+from requests import exceptions as req_exc
+
+# Disabilita avvisi SSL
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+
+def main():
+    parser = argparse.ArgumentParser(description="CheckMK Special Agent for FortiGate")
+    parser.add_argument("--hostname", required=True, help="FortiGate hostname or IP")
+    parser.add_argument("--api-key", required=True, help="FortiGate API key")
+    parser.add_argument("--port", type=int, default=443, help="HTTPS port (default: 443)")
+    parser.add_argument("--timeout", type=int, default=30, help="Timeout in seconds")
+    parser.add_argument(
+        "--branch-change-critical",
+        dest="branch_change_critical",
+        action="store_true",
+        default=True,
+        help="Consider branch change critical (default)",
+    )
+    parser.add_argument(
+        "--no-branch-change-critical",
+        dest="branch_change_critical",
+        action="store_false",
+        help="Do not consider branch change critical",
+    )
+    parser.add_argument(
+        "--ok-if-unmatured-branch",
+        dest="ok_if_unmatured_branch",
+        action="store_true",
+        default=False,
+        help="Return OK when only immature branch upgrades exist",
+    )
+    parser.add_argument(
+        "--no-ok-if-unmatured-branch",
+        dest="ok_if_unmatured_branch",
+        action="store_false",
+        help="Disable OK override for immature branch upgrades",
+    )
+    parser.add_argument(
+        "--branch-change-ok",
+        dest="branch_change_ok",
+        action="store_true",
+        default=False,
+        help="Treat newer FortiOS branches as OK (informational) when current branch is up to date",
+    )
+
+
+    args = parser.parse_args()
+    
+    base_url = f"https://{args.hostname}:{args.port}/api/v2"
+    headers = {
+        "Authorization": f"Bearer {args.api_key}",
+        "Content-Type": "application/json"
+    }
+    
+    # Helper to classify exceptions into structured, short messages
+    def _error_payload(exc: Exception, endpoint: str) -> Dict[str, Any]:
+        msg = str(exc)
+        text = msg.lower()
+        error_type = "request"
+        # Classify common connection issues
+        if isinstance(exc, (req_exc.ConnectTimeout, req_exc.ReadTimeout, req_exc.Timeout)) or "timed out" in text:
+            error_type = "timeout"
+            short = "Connection timed out"
+        elif isinstance(exc, req_exc.SSLError) or "ssl" in text:
+            error_type = "ssl"
+            short = "SSL error"
+        elif isinstance(exc, req_exc.ConnectionError) or any(s in text for s in [
+            "failed to establish a new connection",
+            "no route to host",
+            "name or service not known",
+            "temporary failure in name resolution",
+            "connection refused",
+        ]):
+            error_type = "connection"
+            # Try to produce a concise, friendly message
+            if "no route to host" in text:
+                short = "No route to host"
+            elif "name or service not known" in text or "name resolution" in text:
+                short = "DNS resolution failed"
+            elif "connection refused" in text:
+                short = "Connection refused"
+            else:
+                short = "Failed to connect"
+        elif isinstance(exc, req_exc.HTTPError):
+            error_type = "http"
+            status = getattr(exc.response, 'status_code', 'unknown')
+            short = f"HTTP error: {status}"
+        else:
+            short = "Request failed"
+
+        payload: Dict[str, Any] = {
+            "status": "error",
+            "error": error_type,
+            "message": short,
+            "endpoint": endpoint,
+            "detail": msg,
+        }
+        # Attach HTTP response details if available
+        try:
+            if isinstance(exc, req_exc.HTTPError) and exc.response is not None:
+                payload["http_status"] = getattr(exc.response, 'status_code', None)
+                payload["reason"] = getattr(exc.response, 'reason', None)
+                body = exc.response.text or ""
+                if body:
+                    payload["response_snippet"] = body[:400]
+        except Exception:
+            pass
+        return payload
+
+    def _normalize_firmware_payload(payload: Any) -> Any:
+        """FortiOS 7.6 returns firmware data in a flatter schema.
+
+        Older releases wrapped everything inside "results" while newer ones expose
+        "current"/"available" at the top level. Unify the shape so that the
+        agent-based check keeps working regardless of the appliance version.
+        """
+
+        if not isinstance(payload, dict):
+            return payload
+
+        normalized: Dict[str, Any] = dict(payload)
+        existing_results = normalized.get("results")
+        results: Dict[str, Any] = dict(existing_results) if isinstance(existing_results, dict) else {}
+
+        for key in ("current", "running", "installed", "active"):
+            current_obj = normalized.get(key)
+            if isinstance(current_obj, dict) and "current" not in results:
+                results["current"] = current_obj
+                break
+
+        for key in ("available", "images", "upgrades", "upgrade_images", "firmwares"):
+            available_list = normalized.get(key)
+            if isinstance(available_list, list) and "available" not in results:
+                results["available"] = available_list
+                break
+
+        if results:
+            normalized["results"] = results
+
+        normalized.setdefault("status", "success")
+        return normalized
+
+    # Ottieni informazioni sistema
+    try:
+        response = requests.get(
+            f"{base_url}/monitor/system/status",
+            headers=headers,
+            verify=False,
+            timeout=args.timeout,
+        )
+        response.raise_for_status()
+        system_data = response.json()
+
+        print("<<<fortigate_system:sep(0)>>>")
+        print(json.dumps(system_data))
+
+    except Exception as e:
+        print("<<<fortigate_system:sep(0)>>>")
+        print(json.dumps(_error_payload(e, "/monitor/system/status")))
+    
+    # Ottieni informazioni firmware
+    try:
+        response = requests.get(
+            f"{base_url}/monitor/system/firmware",
+            headers=headers,
+            verify=False,
+            timeout=args.timeout,
+        )
+        response.raise_for_status()
+        firmware_data = _normalize_firmware_payload(response.json())
+        # Inject monitoring configuration flag into payload for the check plugin
+        try:
+            if isinstance(firmware_data, dict):
+                cfg = firmware_data.get("config", {}) if isinstance(firmware_data.get("config"), dict) else {}
+                cfg.update({
+                    "critical_on_branch_change": bool(args.branch_change_critical),
+                    "ok_if_unmatured_branch": bool(args.ok_if_unmatured_branch),
+                    "branch_change_ok": bool(getattr(args, "branch_change_ok", False)),
+                })
+                firmware_data["config"] = cfg
+        except Exception:
+            pass
+
+        print("<<<fortigate_firmware:sep(0)>>>")
+        print(json.dumps(firmware_data))
+
+    except Exception as e:
+        print("<<<fortigate_firmware:sep(0)>>>")
+        print(json.dumps(_error_payload(e, "/monitor/system/firmware")))
+
+
+    # Ottieni informazioni licenza Webfilter
+    try:
+        response = requests.get(
+            f"{base_url}/monitor/license/status?vdom=root",
+            headers=headers,
+            verify=False,
+            timeout=args.timeout,
+        )
+        response.raise_for_status()
+        license_data = response.json()
+
+        print("<<<fortigate_license:sep(0)>>>")
+
+        wf = None
+        try:
+            results = license_data.get("results", {}) if isinstance(license_data, dict) else {}
+            wf = results.get("web_filtering") if isinstance(results, dict) else None
+        except Exception:
+            wf = None
+
+        if isinstance(wf, dict):
+            payload = {
+                "web_filtering": {
+                    "status": wf.get("status") or wf.get("state") or "unknown",
+                    "expires": wf.get("expires"),
+                }
+            }
+        else:
+            payload = {
+                "error": "no_web_filtering",
+                "results": license_data.get("results") if isinstance(license_data, dict) else None,
+            }
+
+        print(json.dumps(payload))
+
+    except Exception as e:
+        print("<<<fortigate_license:sep(0)>>>")
+        print(json.dumps(_error_payload(e, "/monitor/license/status")))
+
+if __name__ == "__main__":
+    main()
