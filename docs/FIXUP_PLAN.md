@@ -125,3 +125,28 @@ Python precedence makes this parse as `(whole_expression) if detail else False`,
 Currently latent because `_error_payload` always populates `detail`, but would surface if any future agent change produces error payloads without `detail`.
 
 Fix: adopt the firmware check's parenthesized form in the system check. Validation: construct a payload with missing `detail` and `err_type="connection"`, confirm service goes UNKNOWN not CRIT. Schedule as its own chunk after Chunk 6 so the diff is reviewable in isolation.
+
+## Lessons from Chunk 1
+
+Captured at the close of Chunk 1 application. Useful context when planning future chunks.
+
+1. **Latent `is_unknown` precedence bug in `check_fortigate_system`.** Surfaced during the
+   `_errors.py` extraction. See the "Deferred" section above for the full description and
+   proposed fix; scheduled as its own chunk after Chunk 6.
+
+2. **Edit-tool trailing-whitespace stripping.** The Claude Code Edit tool silently
+   normalizes trailing whitespace on lines it touches, both when matching `old_string` and
+   when writing `new_string`. For files with intentional trailing whitespace (e.g., the
+   original import block in `agent_based/fortigate.py`), use `sed -i` or `python3 -c` for
+   byte-level edits.
+
+3. **`deploy-test.sh` missing-directory bug.** The original `find` pipeline aborted under
+   `set -euo pipefail` when any of `rulesets/`, `server_side_calls/`, or `graphing/` was
+   absent — surfaced in Chunk 1 when stub deletion + `git stash`/`pop` left `graphing/`
+   missing (git doesn't track empty dirs). Fixed in commit `300f79d`. The script now
+   enumerates existing GUI subdirectories before invoking `find`.
+
+4. **Per-chunk tagging convention adopted.** Each chunk's successful application is
+   recorded with an annotated tag named `chunk<N>-applied` (e.g., `chunk1-applied`).
+   `v`-prefixed tags (`v1.1.0-baseline-verified`, future `v2.0.0`) are reserved for
+   release / baseline milestones.
