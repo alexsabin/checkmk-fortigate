@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import itertools
 import json
 import time
 from datetime import datetime
@@ -23,7 +24,7 @@ def _parse_single_json_line(string_table) -> Dict[str, Any]:
     # With :sep(0) the payload comes as a JSON line; join defensively.
     if not string_table:
         return {}
-    line = " ".join(string_table[0])
+    line = " ".join(itertools.chain.from_iterable(string_table))
     try:
         obj = json.loads(line)
         return obj if isinstance(obj, dict) else {}

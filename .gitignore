@@ -11,3 +11,6 @@ venv/
 
 # Windows/WSL artifacts
 *:Zone.Identifier
+
+# Backup files
+*.bak.*

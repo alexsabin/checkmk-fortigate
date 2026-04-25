@@ -16,6 +16,8 @@ from typing import Any, Dict, Optional
 import itertools
 import json
 
+from cmk_addons.plugins.fortigate_firmware.agent_based._errors import unknown_hints
+
 # =============================================================================
 # FORTIGATE SYSTEM
 # =============================================================================
@@ -51,7 +53,6 @@ def check_fortigate_system(section):
         detail = section.get("detail")
 
         # Map connectivity to UNKNOWN, auth/ssl/http to CRIT
-        unknown_hints = ["no route to host", "failed to connect", "failed to establish", "dns", "resolution", "refused", "timed out", "timeout"]
         is_unknown = err_type in ("connection", "timeout") or any(h in str(msg).lower() for h in unknown_hints) or any(h in str(detail).lower() for h in unknown_hints) if detail else False
         state = State.UNKNOWN if is_unknown else State.CRIT
 
@@ -127,16 +128,6 @@ def check_fortigate_firmware(section):
         msg = section.get("message") or section.get("error") or "Cannot retrieve firmware information"
         detail = section.get("detail")
 
-        unknown_hints = [
-            "no route to host",
-            "failed to connect",
-            "failed to establish",
-            "dns",
-            "resolution",
-            "refused",
-            "timed out",
-            "timeout",
-        ]
         is_unknown = (
             err_type in ("connection", "timeout")
             or any(h in str(msg).lower() for h in unknown_hints)

@@ -111,3 +111,17 @@ Production migration (separate session, after test-site swap is proven): `mkp di
 - Service rename creates vanished-old + undecided-new in the GUI — accept the new ones, remove the vanished ones, activate.
 - `cmk -d <host>` shows raw agent output; `cmk -nv <host>` shows what each check would compute; `cmk -D <host>` shows the resolved special-agent command line.
 - Special agent `libexec/agent_*` MUST be executable (mode 755). Exit 126 = permission denied.
+
+## Deferred
+
+### System check is_unknown precedence bug
+
+In `agent_based/fortigate.py`, `check_fortigate_system` computes `is_unknown` as:
+
+  `is_unknown = err_type in (...) or any(...) or any(...) if detail else False`
+
+Python precedence makes this parse as `(whole_expression) if detail else False`, so `is_unknown` is False whenever `detail` is empty/None, regardless of `err_type`. The firmware check at lines 140-144 uses correct parentheses and is the reference implementation.
+
+Currently latent because `_error_payload` always populates `detail`, but would surface if any future agent change produces error payloads without `detail`.
+
+Fix: adopt the firmware check's parenthesized form in the system check. Validation: construct a payload with missing `detail` and `err_type="connection"`, confirm service goes UNKNOWN not CRIT. Schedule as its own chunk after Chunk 6 so the diff is reviewable in isolation.

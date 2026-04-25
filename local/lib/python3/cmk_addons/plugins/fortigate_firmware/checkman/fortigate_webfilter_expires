@@ -1,0 +1,13 @@
+title: FortiGate Services License Expiry
+agents: fortigate
+catalog: network/fortinet
+license: GPL
+distribution: check_mk
+description:
+ This check inspects the web filtering subsection of FortiOS GET /monitor/license/status?vdom=root and reports how many days
+ remain before the license expires. WARN is raised at 30 days remaining, CRIT at 15 days or once the license has already expired.
+item:
+ This check has no item. One service is discovered per FortiGate host when a web_filtering license entry is present.
+group: Licensing
+perfdata:
+ days_until_webfilter_expiry: Number of days remaining before the web filtering license expires (negative once expired).
