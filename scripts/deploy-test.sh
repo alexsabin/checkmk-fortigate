@@ -40,8 +40,18 @@ fi
 # rulesets/, server_side_calls/, graphing/ -> need Apache restart
 # agent_based/, libexec/, checkman/ -> just cmk -R is enough
 GUI_HASH_FILE="/tmp/.${CONTAINER}-${FAMILY}-gui-hash"
-GUI_CURRENT=$(find "${SRC_DIR}/rulesets" "${SRC_DIR}/server_side_calls" "${SRC_DIR}/graphing" \
-    -type f -name '*.py' 2>/dev/null | sort | xargs sha256sum 2>/dev/null | sha256sum | awk '{print $1}')
+
+DIRS_TO_HASH=()
+for d in rulesets server_side_calls graphing; do
+    [ -d "${SRC_DIR}/${d}" ] && DIRS_TO_HASH+=("${SRC_DIR}/${d}")
+done
+
+if [ ${#DIRS_TO_HASH[@]} -eq 0 ]; then
+    GUI_CURRENT="no-gui-files"
+else
+    GUI_CURRENT=$(find "${DIRS_TO_HASH[@]}" -type f -name '*.py' \
+        | sort | xargs sha256sum 2>/dev/null | sha256sum | awk '{print $1}')
+fi
 
 GUI_CHANGED="no"
 if [[ "${MODE}" == "full" ]]; then
