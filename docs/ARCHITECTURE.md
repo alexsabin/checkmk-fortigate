@@ -173,6 +173,32 @@ This is a deliberate choice and should be documented as a template pattern. We'l
 | Python module (agent_based/) | matches check or groups related | `fortigate.py` (2 checks), `fortigate_webfilter_expires.py` (1 check) |
 | libexec script | `agent_<vendor>` | `agent_fortigate` |
 
+### 5.9 Graphing API v1 usage
+
+- **Imports:** `from cmk.graphing.v1 import Title, graphs, metrics`
+- **Unit constants:** module-level `UNIT_*` constants for shared units (e.g. `UNIT_COUNT = metrics.Unit(metrics.DecimalNotation(""), metrics.StrictPrecision(0))`, `UNIT_DAYS`). Co-locates unit choices for review and reduces drift.
+- **Variable naming:** `metric_<name> = metrics.Metric(name="<name>", ...)` and `graph_<name> = graphs.Graph(name="<name>", ...)`. Python variable name mirrors the `name=` field exactly so a grep on a perfdata key finds the declaration.
+
+Three earned conventions, all surfaced during Chunk 5:
+
+#### Bare `Metric()` declarations auto-render as single-metric graphs
+
+Any `Metric()` declared in `graphing/` auto-renders as a single-metric graph in the GUI's service detail view, regardless of whether it is referenced by a `Graph()`. There is no opt-out — `metrics.Metric` exposes only `name`, `title`, `unit`, `color`. Trade-off for metrics that aren't real measurements (encoded identity values like a version number): omit the `Metric()` to avoid the meaningless flat-line graph and accept that `cmk-validate-plugins` may warn about an unknown metric in the perfdata, or declare and accept the auto-graph.
+
+#### Mixed-unit graphs hard-fail at GUI render time, not at validate time
+
+A `Graph(simple_lines=[a, b])` where `a` and `b` have different `Unit(...)` instances refuses to render in the GUI ("Cannot create graph with metrics of different units") — even when both render visually as bare integers. `cmk-validate-plugins` does not catch this; only the GUI does. When grouping a metric owned by the local plugin with one owned upstream, verify the upstream `Unit(...)` matches before grouping; if not, accept the cross-owner metric will auto-graph standalone.
+
+#### Metric names are a global namespace
+
+Metric names are global across all loaded plugins, not per-family. Generic names (`temperature`, `cpu_load`, `security_updates`, `updates_available`) are likely already owned by a built-in collection. Pre-flight before declaring:
+
+```bash
+grep -rln 'name="<metric>"' /omd/sites/<site>/lib/python3/cmk/plugins/*/graphing/
+```
+
+When a collision exists on existing perfdata, drop the local duplicate and accept upstream's title/unit/color — renaming the perfdata key in the check function would break RRD continuity for any consumer already plotting it. For new perfdata in future plugins, prefer context-prefixed names (e.g. `fortigate_security_updates` rather than `security_updates`).
+
 ---
 
 ## 6. Deployment & validation workflow (from your notes, confirmed working)
@@ -197,12 +223,8 @@ Ordered by rough priority. None are blockers; all are template-worthy improvemen
 ### 7.1 Hardcoded thresholds in webfilter check — **medium**
 The 30/15-day WARN/CRIT thresholds in `fortigate_webfilter_expires.py` are literals. A proper implementation would add a **check-parameters ruleset** in `rulesets/` so they're GUI-configurable per host/service. Good template example for **Pattern B** (§5.7).
 
-### 7.2 `graphing/fortigate_firmware.py` is a non-functional stub — **low**
-It imports the legacy `graph_info` dict wrapped in try/except and defines nothing. Either:
-- Delete it, or
-- Replace with proper Graphing API v1 (`from cmk.graphing.v1 import metrics, graphs, perfometers`) to render the existing metrics (`updates_available`, `builds_behind_latest`, `days_until_webfilter_expiry`, etc.) with proper units and graphs.
-
-Recommendation: delete now, add real graphing when we formalize the template.
+### 7.2 `graphing/fortigate_firmware.py` was a non-functional stub — **resolved (Chunk 5)**
+Replaced with Graphing API v1 definitions for the system, firmware, and license metrics. See §5.9 for the conventions and the file itself for the current declarations.
 
 ### 7.3 Family name misnomer — **low but permanent**
 The family is `fortigate_firmware`, but it now covers system, firmware, and license. It should really be `fortigate`. Renaming is disruptive (old MKP references, existing services), so this is a judgment call:
