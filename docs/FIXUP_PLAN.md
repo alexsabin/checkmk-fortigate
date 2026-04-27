@@ -220,3 +220,78 @@ Captured at the close of Chunk 4 application.
    future discovery-robustness chunks (and a different application of `cmk -D`
    than Chunk 3's Pattern B verification, but the same underlying lesson:
    `cmk -D` is the truth probe whenever `cmk -nv` alone is ambiguous).
+
+## Lessons from Chunk 5
+
+Captured at the close of Chunk 5 application.
+
+1. **Audit-as-hypothesis discipline applies to declarative chunks too — Chunk 2
+   Lesson #1 reapplied to a declarative surface.** Chunk 5 was scoped on the
+   implicit audit assumption that declaring a `Metric()` without a containing
+   `Graph()` would render as "declare-only, no graph in the service view."
+   Runtime invalidated that: Checkmk's Graphing API v1 auto-renders any
+   unclaimed metric as a single-metric graph, with no opt-out. Confirmed by
+   inspection — `cmk.graphing.v1.metrics.Metric` has exactly four fields
+   (`name`, `title`, `unit`, `color`); the full v1 surface (1280 LOC across 7
+   files) has no `hidden=`, no `auto_graph=False`, no exclusion registry. The
+   lesson is not "the API is missing a feature" — it's that plan-claims about
+   declarative-API *behavior* are hypotheses, not facts, and
+   `cmk-validate-plugins` cannot catch behavioral assumptions, only structural
+   ones. Accepted outcomes: (a) the System auto-graphs (`version_numeric`,
+   `build_number`) are documented visual drift since the perfdata exists either
+   way, (b) the per-chunk validation gate for declarative chunks is updated to
+   enumerate *all* graphs that appear on each service detail page, not just
+   the explicitly-declared ones. Generalization for future declarative chunks
+   (graphing, perfometers, ruleset forms): drop a probe into the GUI to
+   observe actual rendered behavior before declaring scope finalized.
+
+2. **Mixed-unit graphs hard-fail at render time, not at validate time.** A
+   `Graph(simple_lines=[a, b])` where `a` and `b` have different `Unit(...)`
+   definitions — even when both render visually as bare integers (e.g., our
+   `Unit(DecimalNotation(""), StrictPrecision(0))` paired with upstream's
+   `Unit(DecimalNotation(""), StrictPrecision(2))`) — causes Checkmk to
+   refuse rendering: "Cannot create graph with metrics of different units."
+   `cmk-validate-plugins` does not catch this; only the GUI does. When
+   grouping metrics from multiple owners (some declared in our file, some
+   declared upstream), verify the upstream `Unit` matches ours before
+   grouping — or accept that the cross-owner metric will auto-graph
+   standalone. Side-observation, not investigated: standalone auto-graph
+   rendering for upstream-owned metrics (the `security_updates` case after
+   Fix 1) appears inconsistent — the perfdata reaches Checkmk and shows in
+   the Metrics text list ("Pending security updates: 4"), but the standalone
+   auto-graph wasn't visibly present in post-fix screenshots. No Chunk 5
+   lever remains, since touching either the upstream definition or the
+   check's perfdata name is out of scope.
+
+3. **Metric names are a global Checkmk namespace, not per-plugin.** First
+   Chunk 5 deploy raised
+   `plug-in 'security_updates' already defined at cmk.plugins.collection.graphing.updates`.
+   Generic names (`security_updates`, `temperature`, `cpu_load`,
+   `updates_available` — anything that could plausibly mean the same thing
+   across vendors) are most likely already owned upstream. Pre-flight before
+   declaring `Metric()`s in any future graphing file:
+   `grep -rln 'name="<metric>"' /omd/sites/<site>/lib/python3/cmk/plugins/*/graphing/`
+   for each name. Resolution when a collision exists on *existing* perfdata:
+   drop our duplicate and accept upstream's title/unit/color — renaming the
+   perfdata in the check function would break Hard Rule #7 (RRD discontinuity
+   for any consumer already plotting the metric). For *new* perfdata in
+   future plugins, prefer context-prefixed names (e.g.,
+   `fortigate_security_updates` rather than `security_updates`) to avoid the
+   same forced compromise.
+
+4. **ARCHITECTURE.md §5 needs a Graphing API v1 conventions subsection.** The
+   pattern established in `graphing/fortigate_firmware.py` (canonical imports,
+   `UNIT_*` constants, `metric_<bare_name>` variable convention matching the
+   `name=` field, four-graph grouping driven by scale-spread analysis,
+   declare-don't-group for identity metrics with the auto-graph caveat from
+   Lesson #1, accept-upstream for collisions per Lesson #3) is the source
+   material for Chunk 6 to formalize.
+
+5. **Chunk 7 rename surface expanded by Chunk 5.** Three of the four graph
+   `name=` strings declared in `graphing/fortigate_firmware.py` carry the
+   family-prefix `fortigate_firmware_*`
+   (`fortigate_firmware_updates_available`, `fortigate_firmware_builds_behind`,
+   `fortigate_firmware_versions_behind`). When Chunk 7 renames the family
+   directory to `fortigate`, these strings become part of the rename sweep.
+   Flagged for Chunk 7's scope only — Hard Rule #5 (no anticipating the
+   rename in earlier chunks) applies.
