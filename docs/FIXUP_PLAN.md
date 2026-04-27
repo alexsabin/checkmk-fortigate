@@ -86,11 +86,14 @@ Validation gate: open each service in the GUI, metrics display with correct unit
 
 ### Chunk 6 — documentation & repo polish
 
-- Rewrite `README.md` for the three services + the new ruleset, plus the gotchas (`:sep(0)`, kwargs-Result, pycache-clearing, family-name rename if Chunk 7 done).
-- Add `CONTRIBUTING.md` with the dev loop (becomes template fodder later).
-- Confirm `.gitignore` excludes `*.bak.*`, `__pycache__/`, `*.pyc`, `build/`.
+- Rewrite `README.md` as user-facing: install (Releases page + cmk-test container for evaluation), special-agent rule fields, Services License threshold ruleset (Pattern B from Chunk 3), three services with state semantics, troubleshooting. Menu navigation by rule-title search, not asserted menu paths.
+- Add `CONTRIBUTING.md` (new) with two-section split. Section 1 — template-portable dev loop: test container, `deploy-test.sh`, `cmk -d`/`-nv`/`-D` triad, baseline services. Section 2 — Checkmk plugin gotchas: `:sep(0)`, kwargs-`Result`, `__pycache__`, `libexec/` executable bit. Section 1 designed to lift verbatim into the future plugin template.
+- Add ARCHITECTURE.md §5.9 (Graphing API v1 conventions): canonical imports, `UNIT_*` constants, `metric_<name>` variable convention, and the three earned conventions from Chunk 5 (auto-graph behavior of bare `Metric()`, mixed-unit GUI render failure, global metric namespace). Mark §7.2 resolved by Chunk 5 (one-line correction, since "non-functional stub" became misinformation after Chunk 5 populated the file).
+- Confirm `.gitignore` excludes `*.bak.*`, `__pycache__/`, `*.pyc`, `build/`. (Already covers all four — no edit required.)
 
-Validation gate: README matches what `cmk -D fw-test` and the GUI actually show. No drift.
+Validation gate: README matches what `cmk -D fw-test` and the GUI actually show; CONTRIBUTING claims match `scripts/deploy-test.sh` behavior; ARCHITECTURE.md §5.9 conventions match `graphing/fortigate_firmware.py`. Verification probes for command-surface and storage-shape claims (`mkp add`/`mkp enable` syntax inside the container; `Password()` form spec storage discriminator on the test rule). No drift.
+
+Scope expansion note: §5.9 was forward-pointed by Chunk 5 Lesson #4 but not propagated into this chunk's scope text until Chunk 6 kickoff; cascade pattern. The CLAUDE.md "audit-as-hypothesis" promotion (also forward-pointed by Chunks 2/4/5) was deferred — see Deferred section.
 
 ### Chunk 7 — family rename + release
 
@@ -133,6 +136,34 @@ Python precedence makes this parse as `(whole_expression) if detail else False`,
 Currently latent because `_error_payload` always populates `detail`, but would surface if any future agent change produces error payloads without `detail`.
 
 Fix: adopt the firmware check's parenthesized form in the system check. Validation: construct a payload with missing `detail` and `err_type="connection"`, confirm service goes UNKNOWN not CRIT. Schedule as its own chunk after Chunk 7 so the diff is reviewable in isolation.
+
+### CLAUDE.md "audit-as-hypothesis" principle promotion
+
+The principle that audit/plan claims about untouched code (and declarative-API behavior) are hypotheses-to-verify rather than facts has now surfaced across three chunks: Chunk 2 Lesson #1 (License discovery had the same gating bug Chunk 2 was fixing in System, contrary to the plan's "NOT needed for firmware/license discovery" claim), Chunk 4 Lesson #1 (refinement; Chunks 2 and 3 lessons applied in combination), and Chunk 5 Lesson #1 (the bare-`Metric()` auto-graph behavior invalidated a declarative-API plan claim, with `cmk-validate-plugins` unable to catch it).
+
+Three surfacings is enough signal to promote into CLAUDE.md as a process principle. Target section: Part 1 ("Think Before Coding"), most likely as a new bullet under the existing "If a simpler approach exists, say so. Push back when warranted." block — generalized framing along the lines of "Plan claims about untouched code or declarative-API behavior are hypotheses to verify, not facts to trust. Validators catch structural issues, not behavioral assumptions."
+
+Why deferred from Chunk 6: CLAUDE.md is workflow contract; edits ripple into every future chunk's ritual; deserves dedicated deliberation rather than absorbing as a Chunk 6 sub-bullet. Likely handled as a focused micro-edit, possibly bundled with Chunk 7 if the rename forces CLAUDE.md edits anyway.
+
+### ARCHITECTURE.md §10 archival decision
+
+§10 "Decisions needed before Phase 2 (template build)" listed five decisions. All five have been resolved across Chunks 1–5 and FIXUP_PLAN's locked-in decisions: family rename (Chunk 7 scheduled), webfilter Pattern B (Chunk 3 done), graphing populated (Chunk 5 done), CLI password passing (locked), order — fix-first-then-template (locked).
+
+Whole-section archival or removal is a documentation restructuring decision, not a line edit. Three options for the deliberation: (a) archive in place with a "resolved across Chunks 1–5; see FIXUP_PLAN locked-in decisions" note, (b) remove entirely as superseded by FIXUP_PLAN.md, or (c) keep as historical context for the Phase-2 template extraction.
+
+Schedule when the next ARCHITECTURE.md edit is open — most likely during the Chunk 7 rename sweep when paths inside ARCHITECTURE.md need updating.
+
+### `.mkp-builder.ini` title staleness
+
+`title = "FortiGate Firewall Firmware Monitoring"` predates the system + license additions; the title no longer matches the plugin's actual scope (system + firmware + license). Independent of the family rename, so do not pre-bundle into Chunk 7's scope: the Chunk 7 planner sees this entry and decides whether to absorb (the file is already being edited for the `name` field) or split off as a separate micro-edit.
+
+Fix: bump to a title covering the full scope (e.g. `"FortiGate System, Firmware, and License Monitoring"`). Validation: rebuild MKP locally, confirm the new title appears in `mkp inspect <file>` output and in the GUI's Extension packages list.
+
+### `.mkp-builder.ini` download_url fork pointer
+
+`download_url = https://github.com/Jacox98/checkmk-fortios-fw` points at the upstream fork rather than the actual remote `https://github.com/alexsabin/checkmk-fortigate`. Independent of the family rename and of the title staleness above, so a third independent micro-edit candidate.
+
+Fix: update to `https://github.com/alexsabin/checkmk-fortigate`. Validation: same as the title fix — rebuild + `mkp inspect`.
 
 ## Lessons from Chunk 1
 
@@ -295,3 +326,82 @@ Captured at the close of Chunk 5 application.
    directory to `fortigate`, these strings become part of the rename sweep.
    Flagged for Chunk 7's scope only — Hard Rule #5 (no anticipating the
    rename in earlier chunks) applies.
+
+## Lessons from Chunk 6
+
+Captured at the close of Chunk 6 application.
+
+1. **Forward-pointers in Lessons need a propagation step into target chunks'
+   scope text.** Chunk 5 Lesson #4 explicitly flagged ARCHITECTURE.md §5
+   as "source material for Chunk 6 to formalize," and the audit-as-hypothesis
+   principle had been forward-pointed across Chunks 2/4/5, yet neither
+   appeared in FIXUP_PLAN's Chunk 6 scope text at kickoff. Chunk 6 had to
+   surface the gap and re-authorize the §5.9 expansion before any prose
+   was written. Same shape as the Chunk 4 cascade pattern (license-discovery
+   promoted from Deferred). Generalization for future close-out commits:
+   when a Lessons entry ends with "source material for Chunk N" or
+   "forward-pointer for Chunk N," the same close-out commit should also
+   update Chunk N's scope text — don't rely on the next chunk's kickoff
+   to re-discover it. Cheaper to propagate at write-time than to surface
+   and re-authorize at read-time.
+
+2. **For user docs, every command-surface and storage-shape claim needs
+   verification against the running system before finalizing prose.**
+   The README rewrite included two claims that would have been wrong if
+   shipped without verification: (a) the password-storage shape — "Stored
+   in Checkmk's password store" — was contradicted by the actual rule on
+   disk, which uses the inline discriminator (`'cmk_postprocessed',
+   'explicit_password', (uuid, plaintext)`) rather than the password-store
+   discriminator (`'stored_password'`). The `Password()` form spec
+   supports both backends; the test rule happens to use inline. Corrected
+   to "Can be entered inline on the rule, or selected from Checkmk's
+   password store." (b) The `mkp add` / `mkp enable` syntax was correct
+   on first draft, but the verification probe (`mkp add --help`,
+   `mkp enable --help` inside the container) is what made it confirmed
+   rather than asserted-from-recall. Generalization: for docs chunks,
+   running each command-surface or storage-shape probe is the docs
+   equivalent of a validation gate. Cost is one Bash call per claim;
+   cost of leaving wrong syntax is silent install failures or confused
+   readers. "Looks right in the diff" is not sufficient.
+
+3. **Stale documentation is misinformation, not history — triage by
+   cost-of-fix vs cost-of-leaving.** ARCHITECTURE.md §7.2 still claimed
+   `graphing/fortigate_firmware.py` was a "non-functional stub" after
+   Chunk 5 made it functional; §10 listed five "decisions needed before
+   Phase 2" all of which had been resolved across Chunks 1–5. Triage
+   applied: §7.2 fixed in Chunk 6 (one-line correction; file already
+   open; leaving the claim in place would actively mislead any reader
+   who consulted §7.2 before §5.9). §10 deferred (whole-section
+   restructuring is a documentation decision, not a line edit; needs
+   dedicated deliberation on archive-vs-remove-vs-keep). Generalization:
+   when noticing stale claims during edits, surface rather than absorb
+   silently, and triage by cost-of-fix and cost-of-leaving rather than
+   by "is it in scope." Low-cost-low-risk corrections that prevent
+   active misinformation belong in the current commit; restructuring
+   decisions belong as Deferred entries.
+
+4. **Template portability beats duplication-avoidance for docs meant to
+   lift verbatim.** CONTRIBUTING.md's test-container setup duplicates
+   the README's. Cross-referencing the README (e.g. "see README.md for
+   container setup") would have broken the lift-verbatim goal of the
+   dev-loop section, which is designed to be the seed for the future
+   plugin template. Decision: accept the duplication and budget the
+   drift risk into the next "audit and resync" pass. Generalization:
+   when a document section is designed for downstream reuse, accept
+   maintenance overhead in exchange for self-containment. The
+   inversion-tell: if removing a cross-reference would make the
+   section non-portable, the cross-reference is wrong even when it
+   feels DRY-er.
+
+5. **List-contraction tell: when an enumeration shrinks mid-conversation,
+   re-check against the original before treating the contracted list as
+   canonical.** The gotcha enumeration from the planning round had four
+   items (`:sep(0)`, kwargs-`Result`, pycache, `libexec/` executable bit);
+   the later "three" framing during CONTRIBUTING.md drafting had
+   inadvertently dropped the libexec entry. The user caught it in
+   review. Generalization: when a list reappears in shortened form
+   later in a conversation, the contraction may be intentional or
+   inadvertent; cheap to verify against the earlier explicit
+   enumeration before locking the shorter list. Same shape as Lesson
+   #1 above (cheaper to verify at write-time than surface-and-correct
+   at read-time).
