@@ -43,7 +43,7 @@ agent_section_fortigate_license = AgentSection(
 
 
 def discover_fortigate_webfilter_expires(section: Section) -> DiscoveryResult:
-    if isinstance(section.get("web_filtering"), dict):
+    if section:
         yield Service()
 
 
