@@ -126,6 +126,26 @@ Currently latent because `_error_payload` always populates `detail`, but would s
 
 Fix: adopt the firmware check's parenthesized form in the system check. Validation: construct a payload with missing `detail` and `err_type="connection"`, confirm service goes UNKNOWN not CRIT. Schedule as its own chunk after Chunk 6 so the diff is reviewable in isolation.
 
+### License discovery has same gating bug as System (pre-Chunk-2)
+
+`discover_fortigate_webfilter_expires` in
+`agent_based/fortigate_webfilter_expires.py` (line 45-47) gates on
+`isinstance(section.get("web_filtering"), dict)`. When the agent emits an
+error payload (no `web_filtering` key), the License service is never
+discovered — same class of bug Chunk 2 fixed in `discover_fortigate_system`.
+
+Surfaced during Chunk 2's negative test: with a mangled API key,
+System reappeared as CRIT (Chunk 2 working as intended), but License vanished
+from autochecks. The Chunk 2 plan note "Same change is NOT needed for
+firmware/license discovery — they already discover unconditionally" is correct
+about firmware (`if section: yield Service()`) but wrong about license.
+
+Fix: change line 46 to `if section:` to mirror the firmware/post-Chunk-2-system
+pattern. Validation: same negative test as Chunk 2 — broken key on a fresh
+host should leave License discovered with UNKNOWN/CRIT, not vanished.
+Schedule as its own one-line chunk; trivially small but worth its own
+revertible commit.
+
 ## Lessons from Chunk 1
 
 Captured at the close of Chunk 1 application. Useful context when planning future chunks.
@@ -150,3 +170,23 @@ Captured at the close of Chunk 1 application. Useful context when planning futur
    recorded with an annotated tag named `chunk<N>-applied` (e.g., `chunk1-applied`).
    `v`-prefixed tags (`v1.1.0-baseline-verified`, future `v2.0.0`) are reserved for
    release / baseline milestones.
+
+## Lessons from Chunk 2
+
+Captured at the close of Chunk 2 application.
+
+1. **Plan assertions about adjacent code are hypotheses, not facts.** The Chunk 2
+   scope note said "Same change is NOT needed for firmware/license discovery —
+   they already discover unconditionally." Negative testing proved this correct
+   for firmware but wrong for license (`web_filtering`-dict gate, same class of
+   bug Chunk 2 was fixing in System). Recorded under Deferred. For future chunks,
+   treat plan statements about untouched code as claims to verify, not facts to
+   trust — particularly when the chunk's own change exercises the same code path
+   in a sibling check.
+
+2. **Negative tests with mangled credentials can trip the FortiGate WAF.** Rapid
+   `cmk -d` / `cmk -II` cycles with a broken bearer token produced HTTP 429 (Too
+   Many Requests) responses for ~60-90 seconds, masking the expected 401 auth
+   failures. For future credential-failure validation, build in a
+   wait-for-rate-limit-clear step (poll `cmk -d <host>` until the response stops
+   returning 429) before asserting final service state.
