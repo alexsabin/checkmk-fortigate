@@ -190,3 +190,29 @@ Captured at the close of Chunk 2 application.
    failures. For future credential-failure validation, build in a
    wait-for-rate-limit-clear step (poll `cmk -d <host>` until the response stops
    returning 429) before asserting final service state.
+
+## Lessons from Chunk 3
+
+Captured at the close of Chunk 3 application.
+
+1. **Pattern B verification: don't rely on state-transition gates when an
+   absolute-state branch can short-circuit threshold logic.** The intuitive way
+   to validate a check-parameters ruleset is to override the defaults and watch
+   the service state change (e.g., set WARN low enough to flip OK → WARN). That
+   gate produces a false pass whenever the check has an absolute-state branch
+   upstream of any threshold comparison. In `check_fortigate_webfilter_expires`,
+   an expired license matches `if seconds_left <= 0:` and yields CRIT before
+   either `params["crit_days"]` or `params["warn_days"]` is consulted, so *no*
+   threshold override (not WARN=60/CRIT=30, not even WARN=99999/CRIT=99998)
+   produces a state transition on the test host. The state stays CRIT
+   regardless of params, which reads as "override worked" but proves nothing
+   about the rule reaching the check function. The correct probe in this
+   situation is `cmk -D <host>`, which dumps each service's resolved
+   check-parameters dict — with no rule it shows
+   `{'warn_days': 30, 'crit_days': 15}`; with an override rule active it shows
+   the new dict. That proves rule-spec ↔ `check_ruleset_name` linkage and
+   rule-merge behavior end-to-end without depending on the check's internal
+   control flow. Apply this approach in any future Pattern B chunk (and bake it
+   into the eventual template) whenever the check has an absolute-bad-state
+   branch ahead of its threshold ladder — which is most expiry, connectivity,
+   and auth checks.
