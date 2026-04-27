@@ -58,7 +58,7 @@ def _get_expires_epoch(section: Section) -> Optional[int]:
         return None
 
 
-def check_fortigate_webfilter_expires(section: Section) -> CheckResult:
+def check_fortigate_webfilter_expires(params: Mapping[str, Any], section: Section) -> CheckResult:
     wf = section.get("web_filtering")
     if not isinstance(wf, dict):
         yield Result(state=State.UNKNOWN, summary="No web_filtering data in agent output")
@@ -77,12 +77,11 @@ def check_fortigate_webfilter_expires(section: Section) -> CheckResult:
     expiry_local = datetime.fromtimestamp(expires).astimezone()
     expiry_str = expiry_local.strftime("%Y-%m-%d")
 
-    # Thresholds fixed by requirement: WARN <= 30, CRIT <= 15
     if seconds_left <= 0:
         yield Result(state=State.CRIT, summary=f"Expired on {expiry_str} ({abs(days_left)} days ago) (status: {status})")
-    elif days_left <= 15:
+    elif days_left <= params["crit_days"]:
         yield Result(state=State.CRIT, summary=f"Expires in {days_left} days ({expiry_str}) (status: {status})")
-    elif days_left <= 30:
+    elif days_left <= params["warn_days"]:
         yield Result(state=State.WARN, summary=f"Expires in {days_left} days ({expiry_str}) (status: {status})")
     else:
         yield Result(state=State.OK, summary=f"Expires in {days_left} days ({expiry_str}) (status: {status})")
@@ -96,4 +95,6 @@ check_plugin_fortigate_webfilter_expires = CheckPlugin(
     sections=["fortigate_license"],
     discovery_function=discover_fortigate_webfilter_expires,
     check_function=check_fortigate_webfilter_expires,
+    check_default_parameters={"warn_days": 30, "crit_days": 15},
+    check_ruleset_name="fortigate_webfilter_expires",
 )
