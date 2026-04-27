@@ -37,7 +37,7 @@ def parse_fortigate_system(string_table):
 
 def discover_fortigate_system(section):
     """Discovery function for FortiGate System"""
-    if section and section.get("status") == "success":
+    if section:
         yield Service()
 
 def check_fortigate_system(section):
