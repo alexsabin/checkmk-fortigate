@@ -151,7 +151,7 @@ Do not violate these without explicit instruction.
 2. **Agent sections always use `:sep(0)`** for JSON payloads. `<<<section_name:sep(0)>>>`.
 3. **The special agent never raises out** — it always emits a section, with a structured error payload if needed (see `_error_payload` in `libexec/agent_fortigate`).
 4. **Service display name ≠ check plugin internal name** is OK, but document it. Internal name describes the data; service name describes the user-facing thing.
-5. **Family directory name is misleading** (`fortigate_firmware` covers system + firmware + license). Chunk 6 renames it to `fortigate`. Don't anticipate the rename in earlier chunks.
+5. **Family directory name is misleading** (`fortigate_firmware` covers system + firmware + license). Chunk 7 renames it to `fortigate`. Don't anticipate the rename in earlier chunks.
 6. **Clear `__pycache__` and `*.pyc`** after every edit. The deploy script handles this; if you bypass it, do so manually.
 7. **Don't break the three baseline services.** System OK, Firmware Updates WARN/OK, Services License OK/WARN/CRIT. After any change, re-verify all three.
 8. **Each chunk is one commit.** Don't bundle chunks. Don't half-implement a chunk and move on.
@@ -180,7 +180,7 @@ Before committing any chunk, walk through this list. If you cannot check a box, 
 - Any new dependency (pip package, system tool).
 - Any change to the dev-loop script.
 - Any change to git history (rebases, force-pushes, tag moves).
-- Any production-side action (production is hands-off until Chunk 6 sign-off).
+- Any production-side action (production is hands-off until Chunk 7 sign-off).
 - Any change to `CLAUDE.md`, `docs/ARCHITECTURE.md`, or `docs/FIXUP_PLAN.md`.
 
 ---
