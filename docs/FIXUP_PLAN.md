@@ -145,6 +145,11 @@ Three surfacings is enough signal to promote into CLAUDE.md as a process princip
 
 Why deferred from Chunk 6: CLAUDE.md is workflow contract; edits ripple into every future chunk's ritual; deserves dedicated deliberation rather than absorbing as a Chunk 6 sub-bullet. Likely handled as a focused micro-edit, possibly bundled with Chunk 7 if the rename forces CLAUDE.md edits anyway.
 
+Scope additions from Chunk 7 close-out:
+
+- **Hard Rule #5 obsolete-scaffolding cleanup.** The `Family directory name is misleading…` rule was rename-scaffolding for Chunks 1–6 and became obsolete when Chunk 7 landed (see Lessons from Chunk 7 #4). The audit-as-hypothesis promotion already touches Part 3 (Hard Rules), so retire the obsolete rule in the same edit pass — either delete and renumber, or rewrite as a forward-looking convention statement (e.g., "family directory matches the vendor, not the first-shipped feature").
+- **Forward-pointer enforcement scaffolding.** The promotion should grow a mechanical close-out step into Part 4 (Per-Chunk Checklist) requiring each new Lesson and Deferred entry to be scanned for forward-pointers (references to specific other Deferred entries, future chunks by number, or specific files/sections to be edited later); for each forward-pointer found, edit the target now in the same commit, never as a thing-to-remember (see Lessons from Chunk 7 #5). The named-Lesson approach has now failed three times — Chunk 4 cascade was the first instance; Chunk 6 Lesson #1 named the pattern explicitly; Chunk 7 Lesson #4 still failed to propagate despite the named Lesson existing. Three recurrences is signal that the scaffolding needs to be mechanical, not memetic.
+
 ### ARCHITECTURE.md §10 archival decision
 
 §10 "Decisions needed before Phase 2 (template build)" listed five decisions. All five have been resolved across Chunks 1–5 and FIXUP_PLAN's locked-in decisions: family rename (Chunk 7 scheduled), webfilter Pattern B (Chunk 3 done), graphing populated (Chunk 5 done), CLI password passing (locked), order — fix-first-then-template (locked).
@@ -153,17 +158,11 @@ Whole-section archival or removal is a documentation restructuring decision, not
 
 Schedule when the next ARCHITECTURE.md edit is open — most likely during the Chunk 7 rename sweep when paths inside ARCHITECTURE.md need updating.
 
-### `.mkp-builder.ini` title staleness
+### `deploy-test.sh` does not clean up old family directory after a rename
 
-`title = "FortiGate Firewall Firmware Monitoring"` predates the system + license additions; the title no longer matches the plugin's actual scope (system + firmware + license). Independent of the family rename, so do not pre-bundle into Chunk 7's scope: the Chunk 7 planner sees this entry and decides whether to absorb (the file is already being edited for the `name` field) or split off as a separate micro-edit.
+`scripts/deploy-test.sh` removes `${DEST_DIR}` (the new family path) before re-syncing, but does not detect or clean up the *previous* family directory left over in the container from earlier deploys. First validation pass after Chunk 7's `git mv` failed with duplicate-plugin-definition errors because both `fortigate_firmware/` and `fortigate/` were loaded in `/omd/sites/cmk/local/lib/python3/cmk_addons/plugins/`. Resolved manually with one `docker exec ... rm -rf` of the old path.
 
-Fix: bump to a title covering the full scope (e.g. `"FortiGate System, Firmware, and License Monitoring"`). Validation: rebuild MKP locally, confirm the new title appears in `mkp inspect <file>` output and in the GUI's Extension packages list.
-
-### `.mkp-builder.ini` download_url fork pointer
-
-`download_url = https://github.com/Jacox98/checkmk-fortios-fw` points at the upstream fork rather than the actual remote `https://github.com/alexsabin/checkmk-fortigate`. Independent of the family rename and of the title staleness above, so a third independent micro-edit candidate.
-
-Fix: update to `https://github.com/alexsabin/checkmk-fortigate`. Validation: same as the title fix — rebuild + `mkp inspect`.
+Fix options: (a) low-cost — add a "if you renamed the family, delete the old tree by hand once" note to the runbook section in CLAUDE.md Part 6 (What to Do When Stuck); (b) higher-cost — teach `deploy-test.sh` to enumerate `${DEST_PARENT}/<other-fortigate*>` siblings of `${FAMILY}` and either warn or auto-clean. Recommend (a) immediately and (b) deferred as a script-hardening micro-edit, since family renames are once-per-project events.
 
 ## Lessons from Chunk 1
 
@@ -405,3 +404,108 @@ Captured at the close of Chunk 6 application.
    enumeration before locking the shorter list. Same shape as Lesson
    #1 above (cheaper to verify at write-time than surface-and-correct
    at read-time).
+
+## Lessons from Chunk 7
+
+Captured at the close of Chunk 7 application.
+
+1. **Invariant-B-style preservation diverges from a surface read of
+   Chunk 5 Lesson #5 — partition by audience, not by prefix.** Chunk 5
+   Lesson #5 read the family-prefixed `fortigate_firmware_*` graph
+   `name=` strings as "part of the [Chunk 7] rename sweep." Chunk 7's
+   kickoff partition reversed the read: graph `name=` strings prefix
+   the (Invariant-A-stable) check name, not the family directory; they
+   are user-visible (RRD, dashboard references) and renaming them buys
+   visual consistency for zero functional gain at the cost of breaking
+   user-saved dashboards. Same RRD-continuity class as Chunk 5 Lesson
+   #3 (metric-namespace global preservation when collisions exist).
+   Generalization: when a rename's blast-radius surface includes
+   strings that share a prefix with the renamed identifier, partition
+   by audience first — code-only strings rename freely; user-visible
+   strings (RRD names, perfdata keys, on-the-wire section headers,
+   service identity, package-name CLI tokens) inherit Invariant-A-style
+   preservation by default. The shared-prefix is a hint, not a license
+   to rename.
+
+2. **Chunk 6 Lesson #3 lifted to operational rule: "scan-while-open."**
+   Chunk 6 Lesson #3 stated the principle (stale doc is misinformation;
+   triage by cost-of-fix vs cost-of-leaving). Chunk 7 applied it three
+   times in one ARCHITECTURE.md edit pass: §7.6 marker (silently
+   resolved by Chunk 1, never marked); file-inventory line 35
+   annotation ("empty stub — see §7" became misinformation after
+   Chunk 5 populated the file); repo-root tree line 47
+   (`checkmk-fortios-fw/` was the pre-fork upstream name, parallel to
+   the `download_url` absorption). Operational rule for future chunks:
+   whenever any doc file is opened for any reason, run a scan pass for
+   already-resolved sections still missing markers and stale
+   annotations whose cost-of-fix is one Edit. Don't wait for a
+   dedicated doc-hygiene chunk. The cost discipline is the same
+   triage Chunk 6 #3 named — restructuring decisions still go to
+   Deferred; one-line marker corrections go in the open commit.
+
+3. **Family rename in the test container needs a one-time stale-tree
+   cleanup that `deploy-test.sh` does not perform.** First validation
+   pass after `git mv` failed with duplicate-plugin-definition errors
+   (both `fortigate_firmware/` and `fortigate/` loaded inside
+   `/omd/sites/cmk/local/lib/python3/cmk_addons/plugins/`). The
+   deploy script removes `${DEST_DIR}` (the *new* family path) before
+   re-syncing, never the old one. Resolved with a manual
+   `docker exec ... rm -rf` of the old path; recorded as a Deferred
+   entry covering the runbook note (immediate) and the
+   `deploy-test.sh` enumeration of sibling family directories
+   (deferred micro-edit). Generalization: dev-loop scripts that key
+   off a single `FAMILY` variable have a blind spot when the
+   variable's value changes — every script that uses `FAMILY` to
+   compose a path needs an explicit "what about the old value" pass
+   when the rename lands. Once-per-project event but worth the
+   runbook line so the next plugin's Chunk 7 doesn't re-discover it.
+
+4. **CLAUDE.md Hard Rule #5 was rename-scaffolding — left literal,
+   cleanup belongs to the audit-as-hypothesis promotion.** Hard
+   Rule #5 (`Family directory name is misleading… Chunk 7 renames it…
+   Don't anticipate the rename in earlier chunks`) was operational
+   guidance for Chunks 1–6. After Chunk 7 lands, both clauses are
+   obsolete — the first is no longer current-state, and the second
+   policed earlier chunks that are already past. The defensive read
+   on CLAUDE.md lines 108/121/154 left line 154 literal because the
+   chunk's kickoff scope was "rename-only for CLAUDE.md," and
+   rewriting the rule's content (rather than mechanically renaming
+   identifiers within it) is a structural edit, not a rename. The
+   rule's cleanup is a natural sub-task of the audit-as-hypothesis
+   principle promotion already in Deferred — that work touches Hard
+   Rules anyway, so absorb the obsolete-scaffolding cleanup into it.
+   Generalization: rules that name a specific upcoming chunk by
+   number are scaffolding rules; once that chunk lands, the rule is
+   automatically obsolete. Track them at write-time so the cleanup
+   is owned by the chunk that retires the scaffolding, not left as
+   stale doctrine in the workflow contract.
+
+5. **Named Lessons are not sufficient scaffolding for the
+   forward-pointer pattern — propagation must be a mechanical
+   close-out step.** Three instances now: Chunk 4 cascade
+   (forward-pointers in scope text not propagated to target chunks
+   — first instance, surfaced and re-authorized at Chunk 6 kickoff);
+   Chunk 6 Lesson #1 named the pattern explicitly ("when a Lessons
+   entry ends with 'source material for Chunk N' or 'forward-pointer
+   for Chunk N,' the same close-out commit should also update
+   Chunk N's scope text"); Chunk 7 Lesson #4 *still* failed to
+   propagate despite the named Lesson existing — Lesson #4 said
+   "absorb into the audit-as-hypothesis Deferred entry" but the
+   close-out commit (ae07772) did not edit that entry, leaving the
+   absorption as a forward-pointer-to-be-rediscovered. The failure
+   mode is that "remember to propagate" relies on
+   surface-area-to-remember which doesn't survive a long close-out
+   commit; the named Lesson decorates the symptom but does not
+   change the procedure. Operational rule: as a mechanical step in
+   every chunk's close-out ritual, scan each new Lesson and Deferred
+   entry's prose for forward-pointers (references to specific other
+   Deferred entries, future chunks by number, or specific
+   files/sections to be edited later); for each forward-pointer
+   found, edit the target now, in the same commit — never leave it
+   as a thing-to-remember. This Lesson is itself forward-pointing
+   at the audit-as-hypothesis Deferred entry (which is being
+   expanded in this same amend to add the
+   forward-pointer-enforcement clause); writing this Lesson
+   correctly is the act of fixing the bug it names. Chunk 8+
+   close-outs run the scan as a Per-Chunk-Checklist item until the
+   audit-as-hypothesis promotion bakes it into Part 4 of CLAUDE.md.
