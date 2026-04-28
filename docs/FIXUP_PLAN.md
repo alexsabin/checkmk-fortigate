@@ -149,6 +149,7 @@ Scope additions from Chunk 7 close-out:
 
 - **Hard Rule #5 obsolete-scaffolding cleanup.** The `Family directory name is misleading…` rule was rename-scaffolding for Chunks 1–6 and became obsolete when Chunk 7 landed (see Lessons from Chunk 7 #4). The audit-as-hypothesis promotion already touches Part 3 (Hard Rules), so retire the obsolete rule in the same edit pass — either delete and renumber, or rewrite as a forward-looking convention statement (e.g., "family directory matches the vendor, not the first-shipped feature").
 - **Forward-pointer enforcement scaffolding.** The promotion should grow a mechanical close-out step into Part 4 (Per-Chunk Checklist) requiring each new Lesson and Deferred entry to be scanned for forward-pointers (references to specific other Deferred entries, future chunks by number, or specific files/sections to be edited later); for each forward-pointer found, edit the target now in the same commit, never as a thing-to-remember (see Lessons from Chunk 7 #5). The named-Lesson approach has now failed three times — Chunk 4 cascade was the first instance; Chunk 6 Lesson #1 named the pattern explicitly; Chunk 7 Lesson #4 still failed to propagate despite the named Lesson existing. Three recurrences is signal that the scaffolding needs to be mechanical, not memetic.
+- **Gate-composition execution-path-mirror rule.** The gate-composition finding (separate Deferred entry below) shares the Part 4 checklist target — gates must mirror the production execution path, not just the fresh-execution path. For path-changing edits the gate must include a precompiled-path probe (GUI service list, or `cmk -II` + `cmk -O` followed by a live-monitoring check); for non-path-changing edits `cmk -nv` alone remains sufficient. Add as a sibling bullet to the forward-pointer scan in the same Part 4 edit pass.
 
 ### ARCHITECTURE.md §10 archival decision
 
@@ -158,11 +159,31 @@ Whole-section archival or removal is a documentation restructuring decision, not
 
 Schedule when the next ARCHITECTURE.md edit is open — most likely during the Chunk 7 rename sweep when paths inside ARCHITECTURE.md need updating.
 
-### `deploy-test.sh` does not clean up old family directory after a rename
+### `deploy-test.sh` does not clean up Checkmk cached state after structural changes
 
-`scripts/deploy-test.sh` removes `${DEST_DIR}` (the new family path) before re-syncing, but does not detect or clean up the *previous* family directory left over in the container from earlier deploys. First validation pass after Chunk 7's `git mv` failed with duplicate-plugin-definition errors because both `fortigate_firmware/` and `fortigate/` were loaded in `/omd/sites/cmk/local/lib/python3/cmk_addons/plugins/`. Resolved manually with one `docker exec ... rm -rf` of the old path.
+Shared root cause: the dev-loop script syncs plugin source but does not invalidate Checkmk's downstream caches that key off the previous source state. Surfaced twice during Chunk 7's family rename, each in a different cache.
 
-Fix options: (a) low-cost — add a "if you renamed the family, delete the old tree by hand once" note to the runbook section in CLAUDE.md Part 6 (What to Do When Stuck); (b) higher-cost — teach `deploy-test.sh` to enumerate `${DEST_PARENT}/<other-fortigate*>` siblings of `${FAMILY}` and either warn or auto-clean. Recommend (a) immediately and (b) deferred as a script-hardening micro-edit, since family renames are once-per-project events.
+**Incident 1 — stale family directory tree.** `scripts/deploy-test.sh` removes `${DEST_DIR}` (the new family path) before re-syncing, but does not detect or clean up the *previous* family directory left over in the container from earlier deploys. First validation pass after Chunk 7's `git mv` failed with duplicate-plugin-definition errors because both `fortigate_firmware/` and `fortigate/` were loaded in `/omd/sites/cmk/local/lib/python3/cmk_addons/plugins/`. Resolved manually with one `docker exec ... rm -rf` of the old path.
+
+**Incident 2 — stale per-host precompiled bundle.** After the new family directory was in place and `cmk -nv fw-test` was clean, the `Check_MK` service on `fw-test` went UNKN with `No module named 'cmk_addons.plugins.fortigate_firmware'`. The per-host precompiled bundle had the old import path baked in even though plugin code was loading from the new family path. Resolved with `docker exec -u cmk cmk-test cmk -II fw-test` + `cmk -O` + Activate Changes.
+
+Fix options:
+
+(a) low-cost — extend the runbook section in CLAUDE.md Part 6 (What to Do When Stuck) with two notes: (i) "if you renamed the family, delete the old tree by hand once" for Incident 1, and (ii) "if a service goes UNKN with `No module named` after a structural change, re-inventory and recompile per host (`cmk -II <host>` + `cmk -O`)" for Incident 2;
+
+(b) higher-cost — teach `deploy-test.sh` to (i) enumerate `${DEST_PARENT}/<other-fortigate*>` siblings of `${FAMILY}` and either warn or auto-clean for Incident 1, and (ii) detect path-changing edits and run `cmk -II && cmk -O` post-sync for Incident 2.
+
+Recommend (a) immediately and (b) deferred as a script-hardening micro-edit, since structural changes are once-per-project events.
+
+### Validation gates must mirror production execution path, not just the fresh-execution path
+
+Chunk 7's gate ran `cmk -nv fw-test`, which bypasses Checkmk's per-host precompiled bundle and exercises checks against a fresh import. The GUI / live-monitoring path uses the precompiled bundle. The gate confirmed plugin code loaded correctly from the new family path but missed the import-path-baked-into-precompiled-bundle problem (Incident 2 of the `deploy-test.sh` entry above). The bug only surfaced after the gate had already passed and the work was being declared done.
+
+Generalization: validation gates that bypass cached execution paths have blind spots for path-changing edits. Gate composition should mirror the production execution path, not just the canonical "is the code correct" path. This is a third axis distinct from (a) the audit-as-hypothesis observation step (which addresses unverified plan claims about untouched code or declarative-API behavior) and (b) the Chunk 5 Lesson #1 enumerate-rendered-output rule (which addresses declarative-API auto-rendering). All three are in the same family — "validators and fast-path probes catch structural issues, not behavioral or environmental ones" — but each addresses a different blind spot.
+
+Operational implication: per-chunk gate design should explicitly enumerate which execution paths are being exercised. For path-changing edits (renames, package-name changes, family-directory changes, server-side-call file relocations), the gate must include a precompiled-path probe (GUI service list, or `cmk -II` + `cmk -O` followed by a live-monitoring check) in addition to `cmk -nv`. For non-path-changing edits, `cmk -nv` alone is sufficient.
+
+Schedule: codify alongside or after the audit-as-hypothesis promotion. Both add Part 4 mechanical steps; bundling avoids two CLAUDE.md edit passes and keeps the checklist subsection coherent.
 
 ## Lessons from Chunk 1
 
