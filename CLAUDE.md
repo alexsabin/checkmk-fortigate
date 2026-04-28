@@ -196,6 +196,8 @@ Before committing any chunk, walk through this list. If you cannot check a box, 
 - **GUI shows "Unimplemented check" or vanished services:** `__pycache__` not cleared, or check plugin internal name changed. Run deploy script (it clears caches).
 - **Special agent returns nothing:** check `cmk -D fw-test` to see the exact command line. Then run that command manually inside the container with the same environment.
 - **Something feels off in the plan itself:** stop. Raise it. Don't improvise around the plan.
+- **Validator fails with duplicate-plugin-definition errors after a family rename:** the old family directory is still in the container alongside the new one. Delete it by hand once — `docker exec cmk-test rm -rf /omd/sites/cmk/local/lib/python3/cmk_addons/plugins/<old-family>` — then re-deploy.
+- **A service goes UNKN with `No module named '<old.import.path>'` after a structural change:** the per-host precompiled bundle has the old import path baked in. Re-inventory and recompile per host: `docker exec -u cmk cmk-test cmk -II <host>`, then `cmk -O`, then Activate Changes.
 
 ---
 
