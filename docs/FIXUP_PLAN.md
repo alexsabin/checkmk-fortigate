@@ -125,13 +125,13 @@ Production migration (separate session, after test-site swap is proven): `mkp di
 
 ## Deferred
 
-### System check is_unknown precedence bug
+### System check is_unknown precedence bug *(resolved by Chunk 9)*
 
 In `agent_based/fortigate.py`, `check_fortigate_system` computes `is_unknown` as:
 
   `is_unknown = err_type in (...) or any(...) or any(...) if detail else False`
 
-Python precedence makes this parse as `(whole_expression) if detail else False`, so `is_unknown` is False whenever `detail` is empty/None, regardless of `err_type`. The firmware check at lines 140-144 uses correct parentheses and is the reference implementation.
+Python precedence makes this parse as `(whole_expression) if detail else False`, so `is_unknown` is False whenever `detail` is empty/None, regardless of `err_type`. The firmware check's error branch (`check_fortigate_firmware`) uses correct parentheses and is the reference implementation.
 
 Currently latent because `_error_payload` always populates `detail`, but would surface if any future agent change produces error payloads without `detail`.
 
@@ -612,3 +612,44 @@ Captured at the close of Chunk 8 application.
    indents, line breaks in the Read output are wrap-layout, not
    text-block boundaries. Anchor `old_string` on unique single-line
    content, not multi-line continuation patterns.
+
+## Lessons from Chunk 9
+
+Captured at the close of Chunk 9 application.
+
+1. **Audit-as-hypothesis at plan-state, first code-chunk application.**
+   The Deferred entry's "currently latent" framing pointed at one
+   error-payload producer (`_error_payload` in
+   `libexec/agent_fortigate`, which always populates `detail` with
+   `str(exc)`). Plan-state re-anchoring against the current codebase
+   surfaced a secondary detail-less producer in
+   `parse_fortigate_system`'s JSON-parse fallback (line 36:
+   `return {"error": "JSON parse failed"}`) that the entry's framing
+   did not consider. Operationally the bug stays latent on that path
+   too because `err_type` "json parse failed" does not match the
+   connection/timeout set and the message does not match
+   `unknown_hints`, but "same output, different reasons" is the kind
+   of contingent equivalence that audit-as-hypothesis is designed to
+   make visible — not derive from. Captured in the chunk commit body
+   rather than promoted to a process Lesson at the principle's level;
+   the Chunk 8 promotion is what made this discipline mechanical at
+   plan-state. First instance of the promoted principle applied to a
+   code chunk rather than docs.
+
+2. **Repro-snippet call-shape anchoring is itself an
+   audit-as-hypothesis application.** A unit-test-shaped probe
+   written at plan-state encodes implicit claims about function
+   signature, parameter types, return shape, and the `State`/`Result`
+   class surface. These claims are cheap to anchor (one read of the
+   function definition + module imports), expensive to skip if the
+   signature drifts — Pattern A checks take `(section)`, Pattern B
+   checks take `(params, section)`, and the surface imported from
+   `cmk.agent_based.v2` could change between Checkmk versions.
+   Anchoring before running keeps in the record what the probe was
+   actually claiming, distinct from "did the probe pass."
+   Generalization: audit-as-hypothesis applies symmetrically to
+   investigative probes the agent constructs at plan-state, not just
+   to plan-claims about touched/untouched code. Same family as
+   Chunk 6 Lesson #2 (verification probes for command-surface and
+   storage-shape claims) — both are "the probe construction is a
+   claim too" instances.
