@@ -675,3 +675,47 @@ Captured at the close of Chunk 10 application.
    re-deliberating from scratch — and the entry body becomes the
    plan-state anchor for the eventual closing chunk, not a fresh
    problem statement.
+
+## Lessons from Chunk 11
+
+Captured at the close of Chunk 11 application.
+
+1. **Audit-doc-section archival annotation as a third
+   resolution-marker category.** ARCHITECTURE.md §10 was an
+   audit-time question-list whose five decisions resolved across
+   Chunks 1–7 plus FIXUP_PLAN's locked-in entries. Inline
+   annotation shape: italic header note mapping each decision to
+   its resolving chunk or locked-in entry, plus a pointer to the
+   live decision record (`docs/FIXUP_PLAN.md`), plus a section-
+   bottom parenthetical confirming the section's own recommendation
+   line was followed. Distinct from Chunk 8 Lesson #3's
+   cross-category convention which covers Deferred-entry
+   inline-with-heading markers (FIXUP_PLAN side); the audit-doc
+   archival shape is the audit-doc-side counterpart for
+   non-Deferred-entry, non-Lesson sections that outlive their
+   question-list framing. Reusable convention for future
+   plugins/projects whose audit docs accumulate
+   resolved-but-historically-relevant sections — alternative to
+   removal (loses provenance) or no-annotation retention (reads as
+   live).
+
+2. **Deliberation-shape Deferred entries can be force-closed via
+   plan-state source-read; refinement to Chunk 10 Lesson #1.**
+   Chunk 10 L1 named two resolution paths — self-actioning entries
+   close at the scheduled chunk; deliberation entries with
+   unranked options carry until externally closed. Chunk 11 added
+   a third: when carry-count makes the deferral mechanism itself
+   the failure mode (§10 was 4x-carried, would have been 5th
+   foregrounding), the closing chunk's plan-state can force-close
+   by reading the candidate target verbatim and converting
+   deliberation to recommendation in plan-state itself. The
+   mechanism is plan-state probe 4's source-read step — once §10
+   was read, the resolution map fell out cleanly because all five
+   decisions had already resolved across chunks; the deliberation
+   was retroactive bookkeeping rather than fresh judgment. Refines
+   Chunk 10 L1's authoring guidance: when a Deferred entry's
+   options will be obvious-after-source-read (because the world
+   has moved on around the entry between write-time and close-time),
+   don't expect the entry to self-close — schedule a closing chunk
+   whose plan-state does the source-read, and accept that
+   plan-state itself may be the deliberation venue.
