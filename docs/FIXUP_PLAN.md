@@ -137,7 +137,7 @@ Currently latent because `_error_payload` always populates `detail`, but would s
 
 Fix: adopt the firmware check's parenthesized form in the system check. Validation: construct a payload with missing `detail` and `err_type="connection"`, confirm service goes UNKNOWN not CRIT. Schedule as its own chunk after Chunk 7 so the diff is reviewable in isolation.
 
-### CLAUDE.md "audit-as-hypothesis" principle promotion
+### CLAUDE.md "audit-as-hypothesis" principle promotion *(resolved by Chunk 8)*
 
 The principle that audit/plan claims about untouched code (and declarative-API behavior) are hypotheses-to-verify rather than facts has now surfaced across three chunks: Chunk 2 Lesson #1 (License discovery had the same gating bug Chunk 2 was fixing in System, contrary to the plan's "NOT needed for firmware/license discovery" claim), Chunk 4 Lesson #1 (refinement; Chunks 2 and 3 lessons applied in combination), and Chunk 5 Lesson #1 (the bare-`Metric()` auto-graph behavior invalidated a declarative-API plan claim, with `cmk-validate-plugins` unable to catch it).
 
@@ -175,7 +175,7 @@ Fix options:
 
 Recommend (a) immediately and (b) deferred as a script-hardening micro-edit, since structural changes are once-per-project events.
 
-### Validation gates must mirror production execution path, not just the fresh-execution path
+### Validation gates must mirror production execution path, not just the fresh-execution path *(resolved by Chunk 8)*
 
 Chunk 7's gate ran `cmk -nv fw-test`, which bypasses Checkmk's per-host precompiled bundle and exercises checks against a fresh import. The GUI / live-monitoring path uses the precompiled bundle. The gate confirmed plugin code loaded correctly from the new family path but missed the import-path-baked-into-precompiled-bundle problem (Incident 2 of the `deploy-test.sh` entry above). The bug only surfaced after the gate had already passed and the work was being declared done.
 
@@ -530,3 +530,5 @@ Captured at the close of Chunk 7 application.
    correctly is the act of fixing the bug it names. Chunk 8+
    close-outs run the scan as a Per-Chunk-Checklist item until the
    audit-as-hypothesis promotion bakes it into Part 4 of CLAUDE.md.
+
+   *Mechanized into CLAUDE.md Part 4 by Chunk 8.*

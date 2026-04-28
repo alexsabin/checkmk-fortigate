@@ -18,6 +18,7 @@ Before implementing:
 - State your assumptions explicitly. If uncertain, ask.
 - If multiple interpretations exist, present them - don't pick silently.
 - If a simpler approach exists, say so. Push back when warranted.
+- Plan claims about untouched code or declarative-API behavior are hypotheses to verify, not facts to trust. Validators catch structural issues, not behavioral assumptions.
 - If something is unclear, stop. Name what's confusing. Ask.
 
 ### In this project that means:
@@ -26,6 +27,7 @@ Before implementing:
 - If a file appears to have an existing bug that's not listed in the chunk scope, mention it — don't silently fix it (that's a #3 violation) and don't pretend you didn't see it.
 - If the FortiGate API response shape differs from what the existing code expects, stop and report. Don't invent a new parser that handles both shapes without confirmation.
 - If an imported name (e.g., a FormSpec class) doesn't exist in the site's Checkmk version, check whether there's an intentional defensive fallback in the existing code before "fixing" the import.
+- When a chunk's scope text or audit asserts behavior of code or a declarative API the chunk does not touch, treat the assertion as a probe-target before relying on it. Past surfacings: Chunk 2 Lesson #1 (License discovery had the same gating bug Chunk 2 was fixing in System, contrary to "NOT needed for firmware/license discovery"), Chunk 4 Lesson #1 (refinement), Chunk 5 Lesson #1 (bare-`Metric()` auto-graph behavior invalidated a declarative-API plan claim that `cmk-validate-plugins` could not catch).
 
 ## 2. Simplicity First
 
@@ -151,7 +153,7 @@ Do not violate these without explicit instruction.
 2. **Agent sections always use `:sep(0)`** for JSON payloads. `<<<section_name:sep(0)>>>`.
 3. **The special agent never raises out** — it always emits a section, with a structured error payload if needed (see `_error_payload` in `libexec/agent_fortigate`).
 4. **Service display name ≠ check plugin internal name** is OK, but document it. Internal name describes the data; service name describes the user-facing thing.
-5. **Family directory name is misleading** (`fortigate_firmware` covers system + firmware + license). Chunk 7 renames it to `fortigate`. Don't anticipate the rename in earlier chunks.
+5. **Family directory name matches the vendor, not the first-shipped feature.** A family covers all data types one vendor's special agent emits — current example: `fortigate/` holds system + firmware + license.
 6. **Clear `__pycache__` and `*.pyc`** after every edit. The deploy script handles this; if you bypass it, do so manually.
 7. **Don't break the three baseline services.** System OK, Firmware Updates WARN/OK, Services License OK/WARN/CRIT. After any change, re-verify all three.
 8. **Each chunk is one commit.** Don't bundle chunks. Don't half-implement a chunk and move on.
@@ -168,7 +170,9 @@ Before committing any chunk, walk through this list. If you cannot check a box, 
 - [ ] **Deploy:** `./scripts/deploy-test.sh` completes with zero validation errors.
 - [ ] **Behavior:** the three baseline services still appear in `fw-test`'s service list.
 - [ ] **Validation gate:** the chunk's specific validation gate in `docs/FIXUP_PLAN.md` passes.
+  - For path-changing edits (rename, package-name change, family-directory change, server-side-call relocation), the gate must include a precompiled-path probe (`cmk -II <host>` + `cmk -O` then a live-monitoring check, or GUI service list inspection) in addition to `cmk -nv`. For non-path-changing edits, `cmk -nv` alone is sufficient.
 - [ ] **Diff review:** `git diff --stat` + `git diff` — diff is small enough to review in under 5 minutes; nothing surprising.
+- [ ] **Forward-pointer scan:** scan each new Lesson and Deferred entry's prose for forward-pointers (references to specific other Deferred entries, future chunks by number, or specific files/sections to be edited later); for each forward-pointer found, edit the target now in the same commit, never as a thing-to-remember.
 - [ ] **Commit message:** one line says what changed, one paragraph says why (references the chunk).
 - [ ] **Deferred items:** anything noticed but not fixed is recorded in `docs/FIXUP_PLAN.md` under "Deferred."
 
