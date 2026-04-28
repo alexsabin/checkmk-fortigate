@@ -53,7 +53,11 @@ def check_fortigate_system(section):
         detail = section.get("detail")
 
         # Map connectivity to UNKNOWN, auth/ssl/http to CRIT
-        is_unknown = err_type in ("connection", "timeout") or any(h in str(msg).lower() for h in unknown_hints) or any(h in str(detail).lower() for h in unknown_hints) if detail else False
+        is_unknown = (
+            err_type in ("connection", "timeout")
+            or any(h in str(msg).lower() for h in unknown_hints)
+            or (detail and any(h in str(detail).lower() for h in unknown_hints))
+        )
         state = State.UNKNOWN if is_unknown else State.CRIT
 
         yield Result(state=state, summary=msg, details=(detail or None))
