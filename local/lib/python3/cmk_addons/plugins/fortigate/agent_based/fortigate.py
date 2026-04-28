@@ -16,7 +16,7 @@ from typing import Any, Dict, Optional
 import itertools
 import json
 
-from cmk_addons.plugins.fortigate_firmware.agent_based._errors import unknown_hints
+from cmk_addons.plugins.fortigate.agent_based._errors import unknown_hints
 
 # =============================================================================
 # FORTIGATE SYSTEM

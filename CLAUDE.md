@@ -105,7 +105,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ## What this project is
 
-The `fortigate_firmware` Checkmk 2.4 plugin, in its fix-up phase. Goal: improve the production plugin, then extract a reusable template repo for future Checkmk special-agent plugins.
+The `fortigate` Checkmk 2.4 plugin, in its fix-up phase. Goal: improve the production plugin, then extract a reusable template repo for future Checkmk special-agent plugins.
 
 ## Read these next
 
@@ -118,7 +118,7 @@ The `fortigate_firmware` Checkmk 2.4 plugin, in its fix-up phase. Goal: improve 
 - **Checkmk version:** 2.4.0 (Check API v2, Rulesets API v1, Server-Side Calls API v1, Graphing API v1).
 - **Test site:** Docker container `cmk-test` (image `checkmk/check-mk-raw:2.4.0-latest`), site name `cmk`, GUI at `http://localhost:8080/cmk/`.
 - **Test host:** `fw-test`, pointed at a real FortiGate. Baseline verified: System OK, Firmware Updates WARN, Services License CRIT (expired license on the FortiGate).
-- **Plugin source tree:** `local/lib/python3/cmk_addons/plugins/fortigate_firmware/`.
+- **Plugin source tree:** `local/lib/python3/cmk_addons/plugins/fortigate/`.
 - **Remote:** `https://github.com/alexsabin/checkmk-fortigate` (private).
 
 ## Dev loop — use this exact sequence

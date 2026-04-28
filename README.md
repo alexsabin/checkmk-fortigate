@@ -21,7 +21,7 @@ Checkmk 2.4 plugin that monitors FortiGate firewalls via the FortiOS REST API. T
 ### Production site
 
 1. Download the latest `.mkp` from the [Releases page](https://github.com/alexsabin/checkmk-fortigate/releases).
-2. Install via the Checkmk GUI: **Setup → Maintenance → Extension packages → Upload package**, then enable the new entry. Or via CLI on the site: `omd su <site>`, then `mkp add <file.mkp>` and `mkp enable fortigate_firmware <version>`.
+2. Install via the Checkmk GUI: **Setup → Maintenance → Extension packages → Upload package**, then enable the new entry. Or via CLI on the site: `omd su <site>`, then `mkp add <file.mkp>` and `mkp enable fortigate <version>`.
 3. Activate changes (**Activate changes** in the GUI, or `cmk -R` from the CLI).
 
 ### Evaluation in a throwaway container

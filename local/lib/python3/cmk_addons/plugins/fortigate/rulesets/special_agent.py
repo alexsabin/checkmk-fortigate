@@ -99,7 +99,7 @@ def _parameter_form():
     )
 
 
-rule_spec_fortigate_firmware = SpecialAgent(
+rule_spec_fortigate = SpecialAgent(
     topic=Topic.NETWORKING,
     name="fortigate",
     title=Title("FortiGate Firmware"),

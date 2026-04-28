@@ -23,7 +23,7 @@ The plugin is a clean example of the **"one special agent, N sections, N check p
 ## 2. File inventory (live)
 
 ```
-fortigate_firmware/
+fortigate/
 ├── agent_based/
 │   ├── fortigate.py                       (system + firmware checks, ~500 lines)
 │   └── fortigate_webfilter_expires.py     (license check, ~100 lines)
@@ -32,7 +32,7 @@ fortigate_firmware/
 │   └── fortigate_system                   (man page: system)
 │                                          (NO man page for webfilter_expires — gap)
 ├── graphing/
-│   └── fortigate_firmware.py              (empty stub — see §7)
+│   └── fortigate.py                       (metrics + graphs — see §5.9)
 ├── libexec/
 │   └── agent_fortigate                    (special agent, Python, ~240 lines)
 ├── rulesets/
@@ -43,7 +43,7 @@ fortigate_firmware/
 
 **Repo-root packaging files:**
 ```
-checkmk-fortios-fw/
+checkmk-fortigate/
 ├── .github/workflows/build.yml   (CI: tag push → MKP → GH release via oposs/mkp-builder@v2)
 ├── .gitignore                     (excludes build/, __pycache__, *.pyc, venv)
 ├── .mkp-builder.ini              (MKP metadata; see §7 for version pinning issue)
@@ -165,7 +165,7 @@ This is a deliberate choice and should be documented as a template pattern. We'l
 ### 5.8 Naming conventions (implied, should be codified)
 | Artifact | Pattern | Examples from code |
 |---|---|---|
-| Family directory | `<vendor>` or `<vendor>_<scope>` | `fortigate_firmware` |
+| Family directory | `<vendor>` or `<vendor>_<scope>` | `fortigate` |
 | Agent section name | `<vendor>_<datatype>` | `fortigate_system`, `fortigate_firmware`, `fortigate_license` |
 | Check plugin name | `<vendor>_<what_it_checks>` | `fortigate_system`, `fortigate_webfilter_expires` |
 | Service name (displayed) | Human phrase, Title Case | "FortiGate System", "Services License" |
@@ -226,12 +226,8 @@ The 30/15-day WARN/CRIT thresholds in `fortigate_webfilter_expires.py` are liter
 ### 7.2 `graphing/fortigate_firmware.py` was a non-functional stub — **resolved (Chunk 5)**
 Replaced with Graphing API v1 definitions for the system, firmware, and license metrics. See §5.9 for the conventions and the file itself for the current declarations.
 
-### 7.3 Family name misnomer — **low but permanent**
-The family is `fortigate_firmware`, but it now covers system, firmware, and license. It should really be `fortigate`. Renaming is disruptive (old MKP references, existing services), so this is a judgment call:
-- **Keep** `fortigate_firmware`: zero disruption, slightly misleading forever.
-- **Rename** to `fortigate`: clean, but old installs would need a migration (uninstall old MKP + install new + re-run discovery).
-
-For the **template repo**, codify "one family per vendor, not per feature" — so future plugins don't repeat this mistake.
+### 7.3 Family name misnomer — **resolved (Chunk 7)**
+Family directory renamed from `fortigate_firmware` to `fortigate`. Service-identity strings (check plugin internal name, agent section name, and on-the-wire `<<<fortigate_firmware:sep(0)>>>` section header) intentionally preserved as `fortigate_firmware` — renaming them would break service identity on existing installs. Production migration runs from a separate runbook (`mkp disable`/`remove` old, install new). For the template, codify "one family per vendor, not per feature" so future plugins don't repeat this mistake.
 
 ### 7.4 Discovery fails closed when API is down — **low**
 `discover_fortigate_system` requires `status == "success"`. A brand-new host with a broken API key will never discover the service, so you never see the CRIT that would tell you the key is broken. Safer pattern: discover unconditionally if *any* section is received, let the check function report the error state.
@@ -241,13 +237,8 @@ Applies to firmware check too (it already discovers on any section, which is bet
 ### 7.5 Duplicated error-classification logic — **low**
 The "map error_type/detail keywords to UNKNOWN vs CRIT/WARN" logic is copy-pasted between `check_fortigate_system` and `check_fortigate_firmware`. Extract into a shared helper (e.g., a `_errors.py` module in `agent_based/`). Reduces drift when rules evolve.
 
-### 7.6 MKP metadata is stale — **trivial but visible**
-`.mkp-builder.ini` says:
-```
-version.min_required = 2.3.0p1
-version.packaged = 2.3.0p34
-```
-Target is 2.4.0. Bump `min_required` to `2.4.0p1` (or whichever patch level you standardize on) and update `packaged` per release.
+### 7.6 MKP metadata is stale — **resolved (Chunk 1)**
+Bumped `version.min_required` and `version.packaged` to `2.4.0p1` in `.mkp-builder.ini`. Per-release `packaged` updates remain a release-time chore.
 
 ### 7.7 `.bak` files in live tree — **trivial**
 Files like `agent_fortigate.bak.2026-02-13_173424` are present in the live site directory. They don't hurt (Checkmk ignores files that don't match the expected naming), but they're clutter. Template convention: backups live outside the plugin tree or in a separate dir, never inside `local/`.

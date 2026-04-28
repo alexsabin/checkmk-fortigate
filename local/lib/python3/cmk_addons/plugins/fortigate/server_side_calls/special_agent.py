@@ -42,7 +42,7 @@ def _agent_arguments(params, host_config):
     yield SpecialAgentCommand(command_arguments=args)
 
 
-special_agent_fortigate_firmware = SpecialAgentConfig(
+special_agent_fortigate = SpecialAgentConfig(
     name="fortigate",
     parameter_parser=noop_parser,
     commands_function=_agent_arguments,

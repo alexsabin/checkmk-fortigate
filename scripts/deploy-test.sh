@@ -11,7 +11,7 @@ set -euo pipefail
 
 CONTAINER="${CONTAINER:-cmk-test}"
 SITE="${SITE:-cmk}"
-FAMILY="${FAMILY:-fortigate_firmware}"
+FAMILY="${FAMILY:-fortigate}"
 
 SRC_DIR="local/lib/python3/cmk_addons/plugins/${FAMILY}"
 DEST_PARENT="/omd/sites/${SITE}/local/lib/python3/cmk_addons/plugins"
