@@ -532,3 +532,83 @@ Captured at the close of Chunk 7 application.
    audit-as-hypothesis promotion bakes it into Part 4 of CLAUDE.md.
 
    *Mechanized into CLAUDE.md Part 4 by Chunk 8.*
+
+## Lessons from Chunk 8
+
+Captured at the close of Chunk 8 application.
+
+1. **Mini-commit-before-chunk as a scope-boundary pattern.** The two
+   post-Chunk-7 findings were captured in a separate docs-only commit
+   (db22b3b) before Chunk 8's main commit (f39a3e7). This kept Chunk 8's
+   commit boundary clean — every changed line in f39a3e7 traced to one
+   of the four scope clauses + Lesson #5 retirement, with no
+   findings-capture mixed in. Per-Chunk Checklist items (Scope,
+   Boundary) became trivial to verify because the findings were
+   already settled by the time the chunk commit started.
+   Generalization: when pre-chunk findings or context-grounding work
+   surfaces during kickoff, capture them as a separate docs-only
+   mini-commit rather than rolling them into the chunk commit. The
+   mini-commit doesn't need its own Per-Chunk-Checklist — it's
+   pre-work — but the next chunk's commit gets a clean boundary as a
+   result. Same shape as the precedent of separating chunk commits
+   from close-out commits (Chunks 1, 4, 5, 6, 7), but applied at
+   kickoff rather than close.
+
+2. **Observations framed as "not a change request" still shape
+   execution.** During plan-state review, the
+   asymmetric-success-condition note was framed as "not a plan
+   change — just naming what 'scan worked' looks like before you run
+   it." The framing was deliberate (not scope addition, not
+   correction). But the observation actually shaped the work: the
+   commit message gained an explicit six-item enumeration of
+   forward-pointers resolved at write-time, and this Lessons review
+   explicitly flagged the empty-scan case as information rather than
+   success. Whether the explicit-enumeration discipline carries
+   forward into Chunk 9+ close-outs is informal and emergent — Chunk
+   8 applied it once; if the discipline holds across Chunks 9–11
+   without slippage, capture as a Deferred entry for Part 4
+   codification. Audit-as-hypothesis took four chunks of surfacing
+   before its promotion landed (2/4/5 surfacing → 6 deferred → 7
+   deferred-with-amend → 8 promoted) — premature codification is its
+   own failure mode. Generalization: at plan-state review,
+   observations framed as "not a change request" frequently carry
+   actionable shape-of-execution implications. Treat them as
+   scope-adjacent — extract the implied "what success looks like"
+   and bake it into the current chunk's validation/close-out steps
+   without auto-promoting it to ongoing contract. Distinct from
+   feedback-as-correction (user says "no, do it differently") and
+   from scope addition (user says "also do X") — observations name
+   the current chunk's success criterion, and only become contract
+   after enough recurrences to justify codification.
+
+3. **Cross-category resolution-marker conventions established.**
+   Chunk 8 set two annotation patterns for resolved entries: Deferred
+   entries get inline-with-heading parenthetical *"(resolved by Chunk
+   N)"* markers; Lessons get end-of-prose italic *"Mechanized into
+   CLAUDE.md Part 4 by Chunk N."* markers. The two surfaces (heading
+   vs continuation prose) called for different visual conventions but
+   the convention idea is the same in both cases: preserve the entry,
+   mark its status. Annotation was chosen over deletion because
+   resolved entries continue to be referenced from other parts of
+   the file by content (Chunk-7 Lesson #4 → audit-as-hypothesis
+   entry; gate-composition prose → audit-as-hypothesis as bundling
+   target; Chunk-5 Lessons → Hard Rule #5 by number).
+   Generalization: deletion is reserved for entries that become
+   genuinely unreferenced; annotation is the default. When a future
+   chunk resolves a Deferred entry or mechanizes a Lesson, follow
+   this convention.
+
+4. **Edit-tool failure mode on numbered-list prose continuations.**
+   The Lesson-#5 mechanization annotation hit an Edit-tool match
+   failure because the `old_string` anchor assumed `Chunk 8+` was at
+   the start of a wrapped continuation line (3-space indent), but it
+   was actually at the end of a wrapped prose line (mid-sentence
+   after "...the bug it names. "). Visible line breaks in the Read
+   output were layout, not structure. Re-anchoring on a unique
+   single-line tail string succeeded immediately. Distinct from the
+   existing memory entry on Edit-tool trailing-whitespace stripping
+   (Chunk 1 Lesson #2) — same tool, different failure mode.
+   Generalization: in numbered-list prose with text-wrap continuation
+   indents, line breaks in the Read output are wrap-layout, not
+   text-block boundaries. Anchor `old_string` on unique single-line
+   content, not multi-line continuation patterns.
