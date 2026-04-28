@@ -159,7 +159,7 @@ Whole-section archival or removal is a documentation restructuring decision, not
 
 Schedule when the next ARCHITECTURE.md edit is open — most likely during the Chunk 7 rename sweep when paths inside ARCHITECTURE.md need updating.
 
-### `deploy-test.sh` does not clean up Checkmk cached state after structural changes
+### `deploy-test.sh` does not clean up Checkmk cached state after structural changes *(fix-tier (a) resolved by Chunk 10; tier (b) script-hardening still open)*
 
 Shared root cause: the dev-loop script syncs plugin source but does not invalidate Checkmk's downstream caches that key off the previous source state. Surfaced twice during Chunk 7's family rename, each in a different cache.
 
@@ -653,3 +653,25 @@ Captured at the close of Chunk 9 application.
    Chunk 6 Lesson #2 (verification probes for command-surface and
    storage-shape claims) — both are "the probe construction is a
    claim too" instances.
+
+## Lessons from Chunk 10
+
+Captured at the close of Chunk 10 application.
+
+1. **Self-actioning Deferred entries close faster than
+   deliberation-requiring ones.** The `deploy-test.sh` entry's body
+   already named the staging at write-time — "Recommend (a)
+   immediately and (b) deferred as a script-hardening micro-edit,
+   since structural changes are once-per-project events" — letting
+   Chunk 10 execute fix-tier (a) literally as a CLAUDE.md Part 6
+   runbook addition. By contrast, the ARCHITECTURE.md §10 archival
+   entry carries three unranked options ((a) archive in place, (b)
+   remove entirely, (c) keep as historical context) with no
+   recommendation, and has been carried across four kickoffs
+   (Chunks 7, 8, 9, 10). Operational implication: when authoring a
+   Deferred entry where a recommendation is clear at write-time,
+   write it as a recommendation in the entry body, not as enumerated
+   options. Future chunks then execute literally rather than
+   re-deliberating from scratch — and the entry body becomes the
+   plan-state anchor for the eventual closing chunk, not a fresh
+   problem statement.
