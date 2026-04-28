@@ -307,6 +307,14 @@ The template carries **both Pattern A and Pattern B** examples so future plugins
 
 ## 10. Decisions needed before Phase 2 (template build)
 
+*Status: all five decisions below are resolved. Section retained for audit provenance; the live decision record lives in `docs/FIXUP_PLAN.md`. Resolution map:*
+
+- *#1 Family renaming — resolved by Chunk 7 (renamed to `fortigate`).*
+- *#2 Webfilter thresholds — resolved by Chunk 3 (Pattern B check-parameters ruleset).*
+- *#3 Graphing — resolved by Chunk 5 (Graphing API v1 populated).*
+- *#4 Secret-passing in CLI — locked in `docs/FIXUP_PLAN.md` (kept `--api-key <secret>`).*
+- *#5 Template-first vs fix-first — locked in `docs/FIXUP_PLAN.md` as (b) fix-first; matches the recommendation at the bottom of this section.*
+
 1. **Family renaming** — Keep `fortigate_firmware` (zero disruption) or rename to `fortigate` (clean, but requires migration)?
 2. **Webfilter thresholds** — Leave hardcoded for now, or convert to Pattern B (check-parameters ruleset) as the first demonstration of Pattern B in the codebase?
 3. **Graphing** — Delete the stub, or actually populate it with Graphing API v1 definitions (useful as a template example for future plugins)?
@@ -315,4 +323,4 @@ The template carries **both Pattern A and Pattern B** examples so future plugins
    - (a) Build template from scratch, then port the FortiGate plugin onto it (clean but slower).
    - (b) Fix the FortiGate plugin in place (addressing §7 items), then extract the template from the result (faster, immediate production improvement, but template ends up shaped by one plugin).
 
-My recommendation: **(b) — improve the FortiGate plugin first**, then extract the template. You get real-world pressure-testing of conventions before they get codified, and your production server benefits immediately.
+My recommendation: **(b) — improve the FortiGate plugin first**, then extract the template. You get real-world pressure-testing of conventions before they get codified, and your production server benefits immediately. *(Followed; fix-first work tracked in `docs/FIXUP_PLAN.md`.)*
