@@ -159,7 +159,7 @@ Whole-section archival or removal is a documentation restructuring decision, not
 
 Schedule when the next ARCHITECTURE.md edit is open — most likely during the Chunk 7 rename sweep when paths inside ARCHITECTURE.md need updating.
 
-### `deploy-test.sh` does not clean up Checkmk cached state after structural changes *(fix-tier (a) resolved by Chunk 10; tier (b) script-hardening still open)*
+### `deploy-test.sh` does not clean up Checkmk cached state after structural changes *(fix-tier (a) resolved by Chunk 10; tier (b) closed without action, Chunk 13)*
 
 Shared root cause: the dev-loop script syncs plugin source but does not invalidate Checkmk's downstream caches that key off the previous source state. Surfaced twice during Chunk 7's family rename, each in a different cache.
 
@@ -174,6 +174,17 @@ Fix options:
 (b) higher-cost — teach `deploy-test.sh` to (i) enumerate `${DEST_PARENT}/<other-fortigate*>` siblings of `${FAMILY}` and either warn or auto-clean for Incident 1, and (ii) detect path-changing edits and run `cmk -II && cmk -O` post-sync for Incident 2.
 
 Recommend (a) immediately and (b) deferred as a script-hardening micro-edit, since structural changes are once-per-project events.
+
+*Tier (b) closed without action — Chunk 13.* Phase-2-absorption rationale: script
+hardening for a once-per-project structural event is most precisely scoped after a
+second plugin's rename lands, not before the first template-extraction attempt.
+Outcome-redirect: the cold HomeAssistant plugin attempt (Phase 2's opening operation)
+will directly probe whether the Chunk 10 Part-6 runbook additions are sufficient;
+hardening before that probe optimizes an assumption rather than an observed gap. If
+the cold attempt surfaces friction the runbook notes don't cover, tier (b)'s scope
+can be drawn from observed friction. Closed per Chunk 8 L3 annotation convention —
+fourth resolution path in the self-actioning-Deferred lineage (Chunk 10 L1 →
+Chunk 11 L2 → Chunk 13).
 
 ### Validation gates must mirror production execution path, not just the fresh-execution path *(resolved by Chunk 8)*
 
