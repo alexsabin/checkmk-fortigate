@@ -782,3 +782,37 @@ Captured at the close of Chunk 12 application.
    forward-pointer-scan report shape, including empty-as-
    information): Chunk 8 L2 governs the report's output side; this
    Lesson governs source-attribution at the report's input side.
+
+## Lessons from Chunk 13
+
+Captured at the close of Chunk 13 application.
+
+1. **Closure-without-action as a fourth Deferred-resolution path.**
+   Tier (b) of the `deploy-test.sh` entry was self-actioning by Chunk
+   10 L1's classification: the recommendation at write-time was explicit
+   ("deferred as a script-hardening micro-edit, since structural changes
+   are once-per-project events"). It carried because Phase-2 absorption —
+   the deferral target — was prospective rather than scheduled. At
+   Chunk 13, the deferral target shifted: Phase 2 opens with a cold
+   HomeAssistant plugin attempt, which is itself the probe of whether the
+   Chunk 10 Part-6 runbook additions are sufficient. Hardening before
+   that probe would optimize a projected gap rather than an observed one;
+   if the cold attempt surfaces friction the runbook notes don't cover,
+   tier (b)'s scope can be drawn from observed friction rather than
+   projected friction.
+
+   Distinct from Chunk 11 L2 (force-close via plan-state source-read):
+   that path applied when the deferral mechanism itself was failing —
+   carry-count had become the obstacle, and the world had already moved
+   on around the entry. Here the deferral mechanism was not failing; the
+   deferral *target* moved. The entry correctly projected "defer to
+   Phase 2"; Phase 2's opening form made a pre-attempt hardening pass
+   lower-leverage than a post-attempt one.
+
+   Fourth resolution path in the self-actioning-Deferred lineage:
+   (Chunk 10 L1) self-actioning entries with clear write-time
+   recommendations close at the scheduled chunk; (Chunk 11 L2)
+   deliberation-requiring entries with high carry-count can be force-
+   closed by plan-state source-read; (Chunk 13) entries whose deferral
+   target shifts to a discovery-event can be closed without action when
+   the discovery-event is itself the gap-check.
