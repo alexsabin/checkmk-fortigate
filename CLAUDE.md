@@ -175,6 +175,9 @@ Before committing any chunk, walk through this list. If you cannot check a box, 
 - [ ] **Forward-pointer scan:** scan each new Lesson and Deferred entry's prose for forward-pointers (references to specific other Deferred entries, future chunks by number, or specific files/sections to be edited later); for each forward-pointer found, edit the target now in the same commit, never as a thing-to-remember.
 - [ ] **Commit message:** one line says what changed, one paragraph says why (references the chunk).
 - [ ] **Deferred items:** anything noticed but not fixed is recorded in `docs/FIXUP_PLAN.md` under "Deferred."
+- [ ] **Close-out commit ritual:** every chunk-body commit is followed by a separate close-out commit (Lessons additions plus any Deferred-entry annotations or resolutions). Its body must include:
+  - **Per-Chunk Checklist enumeration** — a block headed `Per-Chunk Checklist (12 items, explicit enumeration):` followed by items 1–12 in prose, each naming what was actually done for it in this chunk. Item 7 is item 6's Validation-gate-composition sub-bullet enumerated as its own line; items 8–12 then map to Diff review, Forward-pointer scan, Commit message, Deferred items, and Close-out commit ritual respectively. Item 12 (this item) prescribes the close-out commit's own shape; the self-reference is mechanical, not recursive. If Part 4 grows or shrinks, update the literal `12` in the same edit.
+  - **Forward-pointer scan output** — item 9 of the enumeration above must report the scan's output explicitly: positive enumeration of pointers found and propagated in the same commit, or the empty-scan-as-information shape: `Forward-pointer scan — empty. New Lessons reference [back-pointers list]. No specific forward-pointers per the Part 4 criterion.` Empty scan is recorded as information, not success.
 
 ---
 
