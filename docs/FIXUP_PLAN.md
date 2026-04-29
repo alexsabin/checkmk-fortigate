@@ -719,3 +719,55 @@ Captured at the close of Chunk 11 application.
    don't expect the entry to self-close — schedule a closing chunk
    whose plan-state does the source-read, and accept that
    plan-state itself may be the deliberation venue.
+
+## Lessons from Chunk 12
+
+Captured at the close of Chunk 12 application.
+
+1. **Handoff-only convention for process-level codification
+   candidates: first sufficiency data point.** Chunk 11 close-out
+   established the convention (process-level codification
+   candidates carry across chunks via commit-message + plan-state
+   handoff, distinct from FIXUP_PLAN Deferred entries which remain
+   code/docs-scoped). Chunk 12 plan-state was the first test:
+   Items I and II both arrived intact via the Chunk 11 close-out
+   commit body (1cb556d) with no FIXUP_PLAN-side Deferred entry
+   needed; both candidates' shape, trigger history, and structural
+   recommendations carried forward losslessly into Chunk 12's
+   plan-state probes and recommendation. Generalization: when a
+   codification candidate has clear shape plus concrete trigger
+   criteria at the handoff source, the commit-message-as-handoff-
+   medium is sufficient — no FIXUP_PLAN-side scaffolding required.
+   The Deferred-entry convention remains the right home for
+   code/docs-scoped items whose resolution requires file edits
+   beyond a CLAUDE.md amendment. Two surfaces (close-out commit
+   body / FIXUP_PLAN Deferred section), two conventions, both with
+   one validated data point now (handoff-only via Chunks 11→12;
+   Deferred-entry via Chunks 10/11 closing entries authored in
+   prior chunks).
+
+2. **Distinguish commit-auditable from user-tracked when handing
+   off observation-period state.** Chunk 11 close-out reported
+   Items I and II as "3/3 trigger fired" in parallel framing.
+   Chunk 12 plan-state's audit-as-hypothesis pass surfaced an
+   asymmetry: Item I's 3/3 is commit-auditable (literal forward-
+   pointer-scan-as-information line in Chunks 9, 10, 11 close-outs)
+   but Item II's "3/3" is user-tracked (literal 11-item enumeration
+   block visible in Chunks 10 and 11 only; Chunk 9's structured
+   forward-pointer paragraph was the partial-form precursor,
+   counted by user rubric but not by commit audit). The Chunk 11
+   close-out itself self-disclosed Item II as "user-tracked count,"
+   but the parallel framing in the codification proposal didn't
+   preserve that distinction — the receiving chunk had to re-derive
+   it from a fresh audit. Generalization: when handing off
+   observation-period state across chunks, annotate each item's
+   data points as commit-auditable or user-tracked, and surface
+   partial-form precursors explicitly rather than rolling them into
+   the count. Parallel "N/M trigger fired" framing without
+   source-attribution risks shape-drift-via-narrative — exactly
+   what audit-as-hypothesis at the receiving chunk is meant to
+   catch. Reusable across future inter-chunk and inter-session
+   handoffs. Distinct from Chunk 8 Lesson #2 (which prescribes the
+   forward-pointer-scan report shape, including empty-as-
+   information): Chunk 8 L2 governs the report's output side; this
+   Lesson governs source-attribution at the report's input side.
